@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { uploadExcel } from '../service/ExcelService';
 import { ExcelDataDto } from '../types/ExcelDataDto';
 
@@ -10,6 +10,9 @@ const DataDisplayPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [curTableIdx, setCurTableIdx] = useState(0);
+
+  const hasTables = excelData && excelData.tables && excelData.tables.length > 0;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -46,6 +49,63 @@ const DataDisplayPage: React.FC = () => {
 
   return (
     <div style={{ padding: '2rem' }}>
+      {hasTables && (
+        <div style={{ marginTop: '2rem' }}>
+          <div style={{ marginBottom: '2rem' }}>
+            <h2>{excelData.tables[curTableIdx].name}</h2>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    {excelData.tables[curTableIdx].columns.map((col, i) => (
+                      <TableCell key={i}><b>{col.name}</b></TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {excelData.tables[curTableIdx].rows.map((row, rowIdx) => (
+                    <TableRow key={rowIdx}>
+                      {row.map((cell, cellIdx) => (
+                        <TableCell key={cellIdx}>{String(cell)}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </div>
+
+          <BottomNavigation
+            value={curTableIdx}
+            onChange={(event, newValue) => setCurTableIdx(newValue)}
+            showLabels
+            style={{
+              marginBottom: '2rem',
+              width: 'fit-content'
+            }}
+          >
+            {excelData.tables.map((table, index) => (
+              <BottomNavigationAction
+                key={index}
+                label={table.name}
+                value={index}
+                sx={{
+                  border: '1px solid #ccc',
+                  backgroundColor: curTableIdx === index ? '#1976d2' : 'white',
+                  color: curTableIdx === index ? 'white' : 'black',
+                  minWidth: '100px',
+                  borderRadius: '4px',
+                  mx: 0.5,
+                  '&.Mui-selected': {
+                    color: 'white !important',
+                  },
+                }}
+              />
+            ))}
+          </BottomNavigation>
+        </div>
+      )}
+
       <input
         type="file"
         accept=".xlsx"
@@ -77,39 +137,6 @@ const DataDisplayPage: React.FC = () => {
           Selected File: {selectedFile.name}
         </Typography>
       )}
-
-      {excelData && (
-        <div style={{ marginTop: '2rem' }}>
-          <h2>{excelData.projectName}</h2>
-
-          {excelData.tables.map((table, tableIndex) => (
-            <div key={tableIndex} style={{ marginTop: '2rem' }}>
-              <h3>{table.name}</h3>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      {table.columns.map((col, i) => (
-                        <TableCell key={i}><b>{col.name}</b></TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {table.rows.map((row, rowIdx) => (
-                      <TableRow key={rowIdx}>
-                        {row.map((cell, cellIdx) => (
-                          <TableCell key={cellIdx}>{String(cell)}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </div>
-          ))}
-        </div>
-      )}
-
     </div>
   );
 };
