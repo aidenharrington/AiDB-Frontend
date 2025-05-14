@@ -26,7 +26,7 @@ export const uploadExcel = async (file: File): Promise<ExcelDataDto> => {
         // Handle specific HTTP status codes
         switch (status) {
           case 403:
-            throw new Error('Forbidden: You do not have permission to upload this file.');
+            throw new Error('Forbidden: You do not have permission to perform this action.');
           case 422:
             throw new Error('Data validation failed. Please check the file contents.');
           case 500:

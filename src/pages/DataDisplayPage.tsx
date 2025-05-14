@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { uploadExcel } from '../service/ExcelService';
 import { ExcelDataDto } from '../types/ExcelDataDto';
+import SqlTranslatorComponent from "../components/SqlTranslatorComponent"
 
 
 const DataDisplayPage: React.FC = () => {
@@ -105,6 +106,8 @@ const DataDisplayPage: React.FC = () => {
           </BottomNavigation>
         </div>
       )}
+
+      <SqlTranslatorComponent />
 
       <input
         type="file"
