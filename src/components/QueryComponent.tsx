@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import { Box, Tabs, Tab, TextField, Button, Typography, Paper, Stack, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { executeSql, translateNlToSql } from '../service/QueryService';
 
-const SqlTranslatorComponent = () => {
+type Props = {
+    onError: (msg: string) => void;
+    onSubmit: (sqlQuery: string) => void;
+};
+
+const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     // Mode: 0 = Translator | 1 = SQL | 2 = History
     const [mode, setMode] = useState(0);
-    const [nlInput, setNlInput] = useState('');
-    const [sqlInput, setSqlInput] = useState('');
+    const [nlQuery, setNlQuery] = useState('');
+    const [sqlQuery, setSqlQuery] = useState('');
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -13,14 +19,46 @@ const SqlTranslatorComponent = () => {
         if (newMode !== null) setMode(newMode);
     };
 
-    const handleTranslate = () => {
-        // Todo - resume
+    const handleTranslate = async () => {
+        if (!nlQuery) {
+            onError('Please enter text to translate.');
+            return;
+        }
+
+        setLoading(true);
+        onError('');
+
+        try {
+            const data = await translateNlToSql(nlQuery);
+            setSqlQuery(data);
+        } catch (error: unknown) {
+            setLoading(false);
+
+            if (error instanceof Error) {
+                onError(error.message);
+            } else {
+                onError('An error occured. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+        }
+
     };
 
-    const handleSendSql = () => {
-        // TODO
-        // set history
-        // reset NL and SQL input
+    const handleSubmit = async () => {
+        const sql = sqlQuery.trim();
+
+        // Remove trailing semicolon
+        const cleanedSql = sql.endsWith(';') ? sql.slice(0, -1) : sql;
+
+        if (!cleanedSql) {
+            onError('Please enter SQL before submitting.');
+        } else {
+            setLoading(true);
+            onError('');
+            onSubmit(cleanedSql);
+            setLoading(false);
+        }
     }
 
     return (
@@ -31,6 +69,7 @@ const SqlTranslatorComponent = () => {
                     exclusive
                     onChange={handleModeChange}
                     size="small"
+                    disabled={loading}
                 >
                     <ToggleButton value={0}>NL → SQL</ToggleButton>
                     <ToggleButton value={1}>SQL</ToggleButton>
@@ -47,20 +86,26 @@ const SqlTranslatorComponent = () => {
                         multiline
                         rows={2}
                         fullWidth
-                        value={nlInput}
-                        onChange={(e) => setNlInput(e.target.value)}
+                        value={nlQuery}
+                        onChange={(e) => setNlQuery(e.target.value)}
+                        disabled={loading}
                     />
                     <TextField
                         label="Generated SQL"
                         multiline
                         rows={4}
                         fullWidth
-                        value={sqlInput}
-                        onChange={(e) => setSqlInput(e.target.value)}
+                        value={sqlQuery}
+                        onChange={(e) => setSqlQuery(e.target.value)}
+                        disabled={loading}
                     />
                     <Box display="flex" gap={2}>
-                        <Button variant="contained" onClick={handleTranslate}>Translate</Button>
-                        <Button variant="contained" color="success" onClick={handleSendSql}>Send SQL</Button>
+                        <Button variant="contained" onClick={handleTranslate} disabled={loading}>
+                            Translate
+                        </Button>
+                        <Button variant="contained" color="success" onClick={handleSubmit} disabled={loading}>
+                            Send SQL
+                        </Button>
                     </Box>
                 </Stack>
             )}
@@ -72,10 +117,13 @@ const SqlTranslatorComponent = () => {
                         multiline
                         rows={6}
                         fullWidth
-                        value={sqlInput}
-                        onChange={(e) => setSqlInput(e.target.value)}
+                        value={sqlQuery}
+                        onChange={(e) => setSqlQuery(e.target.value)}
+                        disabled={loading}
                     />
-                    <Button variant="contained" color="success" onClick={handleSendSql}>Send SQL</Button>
+                    <Button variant="contained" color="success" onClick={handleSubmit} disabled={loading}>
+                        Send SQL
+                    </Button>
                 </Stack>
             )}
 
@@ -110,4 +158,4 @@ const SqlTranslatorComponent = () => {
     );
 };
 
-export default SqlTranslatorComponent;
+export default QueryComponent;

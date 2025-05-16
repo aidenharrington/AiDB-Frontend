@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { uploadExcel } from '../service/ExcelService';
-import { ExcelDataDto } from '../types/ExcelDataDto';
-import SqlTranslatorComponent from "../components/SqlTranslatorComponent"
+import { ExcelData } from '../types/ExcelData';
+import QueryComponent from "../components/QueryComponent";
+import QueryResultsComponent from '../components/QueryResultsComponent';
+import { executeSql } from '../service/QueryService';
+import { UserQueryData } from '../types/UserQueryData';
 
 
 const DataDisplayPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [excelData, setExcelData] = useState<ExcelDataDto | null>(null);
+  const [excelData, setExcelData] = useState<ExcelData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [curTableIdx, setCurTableIdx] = useState(0);
+  const [userQueryData, setUserQueryData] = useState<UserQueryData | null>(null);
 
   const hasTables = excelData && excelData.tables && excelData.tables.length > 0;
 
@@ -47,6 +51,27 @@ const DataDisplayPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleSqlSubmit = async (sqlQuery: string) => {
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+        const data = await executeSql(sqlQuery);
+        setUserQueryData(data);
+        console.log(userQueryData)
+    } catch (error: unknown) {
+        setLoading(false);
+
+        if (error instanceof Error) {
+            setErrorMessage(error.message);
+        } else {
+          setErrorMessage('An error occured. Please try again.');
+        }
+    } finally {
+        setLoading(false);
+    }
+}
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -107,7 +132,8 @@ const DataDisplayPage: React.FC = () => {
         </div>
       )}
 
-      <SqlTranslatorComponent />
+      <QueryComponent onError={setErrorMessage} onSubmit={handleSqlSubmit}/>
+      <QueryResultsComponent data={userQueryData}/>
 
       <input
         type="file"

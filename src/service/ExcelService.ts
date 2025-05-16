@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { ExcelDataDto } from '../types/ExcelDataDto';
+import { ExcelData } from '../types/ExcelData';
 
-export const uploadExcel = async (file: File): Promise<ExcelDataDto> => {
+export const uploadExcel = async (file: File): Promise<ExcelData> => {
   const formData = new FormData();
   formData.append('file', file);
 
