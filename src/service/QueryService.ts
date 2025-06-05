@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { UserQueryData } from '../types/UserQueryData';
+import { Query } from '../types/Query';
 
 const baseUrl = process.env.REACT_APP_API_BASE_URL || '';
 const queryUrl = `${baseUrl}/queries`;
@@ -84,14 +85,10 @@ export const translateNlToSql = async (nlQuery: string): Promise<string> => {
     }
 }
 
-export const getQueryHistory = async (userId: string): Promise<string> => {
+export const getQueryHistory = async (userId: string): Promise<Query[]> => {
     // TODO resume
     try {
-        const response = await axios.post(queryUrl, userId, {
-            headers: {
-                'Content-Type': 'text/plain',
-            }
-        });
+        const response = await axios.get(queryUrl);
 
         return response.data;
     } catch (error) {

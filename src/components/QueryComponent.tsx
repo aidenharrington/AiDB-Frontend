@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Tabs, Tab, TextField, Button, Typography, Paper, Stack, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import { executeSql, translateNlToSql } from '../service/QueryService';
+import { executeSql, getQueryHistory, translateNlToSql } from '../service/QueryService';
+import { Query } from "../types/Query";
 
 type Props = {
     onError: (msg: string) => void;
@@ -12,8 +13,27 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     const [mode, setMode] = useState(0);
     const [nlQuery, setNlQuery] = useState('');
     const [sqlQuery, setSqlQuery] = useState('');
-    const [history, setHistory] = useState([]);
+    const [history, setHistory] = useState<Query[]>([]);
+    const [historyStale, setHistoryStale] = useState(true);
     const [loading, setLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                // TODO - Replace with real userId
+                const userId = '1';
+                const data = await getQueryHistory(userId);
+                setHistory(data);
+                setHistoryStale(false);
+            } catch (err) {
+                onError('Error fetching query history.');
+            }
+        };
+
+        if (mode === 2 && historyStale) {
+            fetchHistory();
+        }
+    }, [mode]);
 
     const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: number | null) => {
         if (newMode !== null) setMode(newMode);
@@ -58,6 +78,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
             onError('');
             onSubmit(cleanedSql);
             setLoading(false);
+            setHistoryStale(true);
         }
     }
 
@@ -127,33 +148,41 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                 </Stack>
             )}
 
-            {mode === 2 && (
-                <Box
-                    maxHeight={300}
-                    overflow="auto"
-                    mt={1}
-                    pr={1}
-                >
-                    {/* {history.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary">
-                            No queries submitted yet.
-                        </Typography>
-                    ) : (
-                        history.map((entry, idx) => (
-                            <Paper key={idx} variant="outlined" sx={{ mb: 2, p: 2 }}>
-                                {entry.nl && (
-                                    <>
-                                        <Typography variant="subtitle2">Natural Language:</Typography>
-                                        <Typography variant="body2" sx={{ mb: 1 }}>{entry.nl}</Typography>
-                                    </>
-                                )}
-                                <Typography variant="subtitle2">SQL:</Typography>
-                                <Typography variant="body2">{entry.sql}</Typography>
-                            </Paper>
-                        ))
-                    )} */}
-                </Box>
-            )}
+{mode === 2 && (
+    <Box
+        maxHeight={300}
+        overflow="auto"
+        mt={1}
+        pr={1}
+    >
+        {history.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+                No queries submitted yet.
+            </Typography>
+        ) : (
+            history.map((entry, idx) => (
+                <Paper key={idx} variant="outlined" sx={{ mb: 2, p: 2 }}>
+                    {entry.nlQuery && (
+                        <>
+                            <Typography variant="subtitle2">Natural Language:</Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                {entry.nlQuery}
+                            </Typography>
+                        </>
+                    )}
+                    <Typography variant="subtitle2">SQL:</Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                        {entry.sqlQuery}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        {new Date(entry.timestamp).toLocaleString()}
+                    </Typography>
+                </Paper>
+            ))
+        )}
+    </Box>
+)}
+
         </Paper>
     );
 };
