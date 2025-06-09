@@ -39,6 +39,13 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         if (newMode !== null) setMode(newMode);
     };
 
+    const handleEntrySelected = (entry: Query) => {
+        setNlQuery(entry.nlQuery);
+        setSqlQuery(entry.sqlQuery);
+        // TODO: set this to entries mode based off type/if nlquery is present
+        setMode(0);
+    }
+
     const handleTranslate = async () => {
         if (!nlQuery) {
             onError('Please enter text to translate.');
@@ -148,40 +155,45 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                 </Stack>
             )}
 
-{mode === 2 && (
-    <Box
-        maxHeight={300}
-        overflow="auto"
-        mt={1}
-        pr={1}
-    >
-        {history.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-                No queries submitted yet.
-            </Typography>
-        ) : (
-            history.map((entry, idx) => (
-                <Paper key={idx} variant="outlined" sx={{ mb: 2, p: 2 }}>
-                    {entry.nlQuery && (
-                        <>
-                            <Typography variant="subtitle2">Natural Language:</Typography>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                {entry.nlQuery}
-                            </Typography>
-                        </>
+            {mode === 2 && (
+                <Box
+                    maxHeight={300}
+                    overflow="auto"
+                    mt={1}
+                    pr={1}
+                >
+                    {history.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">
+                            No queries submitted yet.
+                        </Typography>
+                    ) : (
+                        history.map((entry, idx) => (
+                            <Paper
+                                key={idx}
+                                variant="outlined"
+                                sx={{ mb: 2, p: 2 }}
+                                onClick={() => handleEntrySelected(entry)}    
+                            >
+                                {entry.nlQuery && (
+                                    <>
+                                        <Typography variant="subtitle2">Natural Language:</Typography>
+                                        <Typography variant="body2" sx={{ mb: 1 }}>
+                                            {entry.nlQuery}
+                                        </Typography>
+                                    </>
+                                )}
+                                <Typography variant="subtitle2">SQL:</Typography>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    {entry.sqlQuery}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    {new Date(entry.timestamp).toLocaleString()}
+                                </Typography>
+                            </Paper>
+                        ))
                     )}
-                    <Typography variant="subtitle2">SQL:</Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                        {entry.sqlQuery}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        {new Date(entry.timestamp).toLocaleString()}
-                    </Typography>
-                </Paper>
-            ))
-        )}
-    </Box>
-)}
+                </Box>
+            )}
 
         </Paper>
     );

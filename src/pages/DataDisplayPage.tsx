@@ -59,7 +59,6 @@ const DataDisplayPage: React.FC = () => {
     try {
         const data = await executeSql(sqlQuery);
         setUserQueryData(data);
-        console.log(userQueryData)
     } catch (error: unknown) {
         setLoading(false);
 

@@ -2,6 +2,6 @@
 
 export interface Query {
     nlQuery: string;
-    sqlQuery: String;
+    sqlQuery: string;
     timestamp: Date;
 }
