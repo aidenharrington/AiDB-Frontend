@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Tabs, Tab, TextField, Button, Typography, Paper, Stack, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { executeSql, getQueryHistory, translateNlToSql } from '../service/QueryService';
 import { Query } from "../types/Query";
+import { useAuth } from '../context/AuthProvider';
 
 type Props = {
     onError: (msg: string) => void;
@@ -9,6 +10,8 @@ type Props = {
 };
 
 const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
+    const { token, user } = useAuth();
+
     // Mode: 0 = Translator | 1 = SQL | 2 = History
     const [mode, setMode] = useState(0);
     const [nlQuery, setNlQuery] = useState('');
@@ -19,10 +22,13 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
 
     useEffect(() => {
         const fetchHistory = async () => {
+            if (!user || !token) {
+                onError("Not authenticated.");
+                return;
+            }
+
             try {
-                // TODO - Replace with real userId
-                const userId = '1';
-                const data = await getQueryHistory(userId);
+                const data = await getQueryHistory(token);
                 setHistory(data);
                 setHistoryStale(false);
             } catch (err) {

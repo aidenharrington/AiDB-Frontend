@@ -7,6 +7,7 @@ import {
     createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { useNavigate } from 'react-router-dom';
 
 
 const AuthenticationPage: React.FC = () => {
@@ -14,6 +15,8 @@ const AuthenticationPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    const navigate = useNavigate();
 
     const handleAuth = () => {
         if (isRegistering) {
@@ -28,7 +31,7 @@ const AuthenticationPage: React.FC = () => {
                 .catch((err) => alert(err.message));
         } else {
             signInWithEmailAndPassword(auth, email, password)
-                .then((user) => console.log('Signed in: ', user))
+                .then((user) => navigate("/data"))
                 // TODO - MVP - Proper error
                 .catch((err) => alert(err.message));
         }

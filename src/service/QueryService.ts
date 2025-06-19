@@ -85,10 +85,13 @@ export const translateNlToSql = async (nlQuery: string): Promise<string> => {
     }
 }
 
-export const getQueryHistory = async (userId: string): Promise<Query[]> => {
-    // TODO resume
+export const getQueryHistory = async (token: string): Promise<Query[]> => {
     try {
-        const response = await axios.get(queryUrl);
+        const response = await axios.get(queryUrl, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            }
+        })
 
         return response.data;
     } catch (error) {
