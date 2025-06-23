@@ -6,9 +6,13 @@ import QueryComponent from "../components/QueryComponent";
 import QueryResultsComponent from '../components/QueryResultsComponent';
 import { executeSql } from '../service/QueryService';
 import { UserQueryData } from '../types/UserQueryData';
+import { useAuth } from '../context/AuthProvider';
+import { authGuard } from '../util/AuthGuard';
 
 
 const DataDisplayPage: React.FC = () => {
+  const { token, user } = useAuth();
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [excelData, setExcelData] = useState<ExcelData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -36,7 +40,7 @@ const DataDisplayPage: React.FC = () => {
     setSuccessMessage('');
 
     try {
-      const data = await uploadExcel(selectedFile);
+      const data = await authGuard(user, token, uploadExcel, selectedFile);
       setSuccessMessage('File uploaded successfully!');
       setExcelData(data);
     } catch (error: unknown) {
@@ -57,20 +61,20 @@ const DataDisplayPage: React.FC = () => {
     setErrorMessage('');
 
     try {
-        const data = await executeSql(sqlQuery);
-        setUserQueryData(data);
+      const data = await authGuard(user, token, executeSql, sqlQuery);
+      setUserQueryData(data);
     } catch (error: unknown) {
-        setLoading(false);
+      setLoading(false);
 
-        if (error instanceof Error) {
-            setErrorMessage(error.message);
-        } else {
-          setErrorMessage('An error occured. Please try again.');
-        }
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage('An error occured. Please try again.');
+      }
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-}
+  }
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -131,8 +135,8 @@ const DataDisplayPage: React.FC = () => {
         </div>
       )}
 
-      <QueryComponent onError={setErrorMessage} onSubmit={handleSqlSubmit}/>
-      <QueryResultsComponent data={userQueryData}/>
+      <QueryComponent onError={setErrorMessage} onSubmit={handleSqlSubmit} />
+      <QueryResultsComponent data={userQueryData} />
 
       <input
         type="file"

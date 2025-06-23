@@ -1,87 +1,44 @@
 import axios from 'axios';
 import { UserQueryData } from '../types/UserQueryData';
 import { Query } from '../types/Query';
+import { handleHttpError } from '../util/HttpUtil';
 
 const baseUrl = process.env.REACT_APP_API_BASE_URL || '';
 const queryUrl = `${baseUrl}/queries`;
 
-export const executeSql = async (sqlQuery: string): Promise<UserQueryData> => {
+export const executeSql = async (token: string, sqlQuery: string): Promise<UserQueryData> => {
     try {
         const response = await axios.post(queryUrl, sqlQuery, {
             headers: {
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'text/plain',
             }
         });
 
         return response.data;
-    } catch (error) {
-        // Check if the error is from Axios (network-related)
-        if (axios.isAxiosError(error)) {
-            if (error.response) {
-                const status = error.response.status;
-
-                // Handle specific HTTP status codes
-                switch (status) {
-                    case 403:
-                        throw new Error('Forbidden: You do not have permission to perform this action.');
-                    case 400:
-                        throw new Error('SQL execution failed. Please check the query.');
-                    case 500:
-                        throw new Error('Server error: Something went wrong on our end.');
-                    default:
-                        throw new Error(error.response.data || 'Unexpected error occurred.');
-                }
-            } else if (error.request) {
-                // No response received (e.g., network issue, server down)
-                throw new Error('Network error: Please check your internet connection or try again later.');
-            } else {
-                // Other errors
-                throw new Error(`Unexpected error: ${error.message}`);
-            }
-        } else {
-            throw new Error('Unknown error occurred.');
-        }
+    } catch (error: any) {
+        handleHttpError(error?.response?.status, error, {
+            400: 'SQL execution failed. Please check the query.'
+        });
     }
 }
 
-export const translateNlToSql = async (nlQuery: string): Promise<string> => {
+export const translateNlToSql = async (token: string, nlQuery: string): Promise<string> => {
     const translateUrl = `${queryUrl}/translate`;
 
     try {
         const response = await axios.post(translateUrl, nlQuery, {
             headers: {
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'text/plain',
             }
         });
 
         return response.data;
-    } catch (error) {
-        // Check if the error is from Axios (network-related)
-        if (axios.isAxiosError(error)) {
-            if (error.response) {
-                const status = error.response.status;
-
-                // Handle specific HTTP status codes
-                switch (status) {
-                    case 403:
-                        throw new Error('Forbidden: You do not have permission to perform this action.');
-                    case 422:
-                        throw new Error('Translation failed. Please check the natural language content.');
-                    case 500:
-                        throw new Error('Server error: Something went wrong on our end.');
-                    default:
-                        throw new Error(error.response.data || 'Unexpected error occurred.');
-                }
-            } else if (error.request) {
-                // No response received (e.g., network issue, server down)
-                throw new Error('Network error: Please check your internet connection or try again later.');
-            } else {
-                // Other errors
-                throw new Error(`Unexpected error: ${error.message}`);
-            }
-        } else {
-            throw new Error('Unknown error occurred.');
-        }
+    } catch (error: any) {
+        handleHttpError(error?.response?.status, error, {
+            422: 'Translation failed. Please check the natural language content.',
+        });
     }
 }
 
@@ -94,33 +51,8 @@ export const getQueryHistory = async (token: string): Promise<Query[]> => {
         })
 
         return response.data;
-    } catch (error) {
-        // Check if the error is from Axios (network-related)
-        if (axios.isAxiosError(error)) {
-            if (error.response) {
-                const status = error.response.status;
-
-                // Handle specific HTTP status codes
-                switch (status) {
-                    case 403:
-                        throw new Error('Forbidden: You do not have permission to perform this action.');
-                    case 422:
-                        throw new Error('Translation failed. Please check the natural language content.');
-                    case 500:
-                        throw new Error('Server error: Something went wrong on our end.');
-                    default:
-                        throw new Error(error.response.data || 'Unexpected error occurred.');
-                }
-            } else if (error.request) {
-                // No response received (e.g., network issue, server down)
-                throw new Error('Network error: Please check your internet connection or try again later.');
-            } else {
-                // Other errors
-                throw new Error(`Unexpected error: ${error.message}`);
-            }
-        } else {
-            throw new Error('Unknown error occurred.');
-        }
+    } catch (error: any) {
+        return handleHttpError(error?.response?.status, error);
     }
 }
 

@@ -15,25 +15,23 @@ const AuthenticationPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [errorMessage, setErrorMessage] = useState<string>('');
 
     const navigate = useNavigate();
 
     const handleAuth = () => {
         if (isRegistering) {
             if (password !== confirmPassword) {
-                // TODO - MVP - Proper error
-                alert("Passwords do not match.");
+                setErrorMessage("Passwords do not match.");
                 return;
             }
             createUserWithEmailAndPassword(auth, email, password)
                 .then((user) => console.log('Signed up: ', user))
-                // TODO - MVP - Proper error
-                .catch((err) => alert(err.message));
+                .catch((err) => setErrorMessage(err.message));
         } else {
             signInWithEmailAndPassword(auth, email, password)
                 .then((user) => navigate("/data"))
-                // TODO - MVP - Proper error
-                .catch((err) => alert(err.message));
+                .catch((err) => setErrorMessage(err.message));
         }
     };
 
@@ -86,6 +84,9 @@ const AuthenticationPage: React.FC = () => {
                         ? 'Already have an account? Sign in'
                         : "Don't have an account? Register"}
                 </Button>
+                
+                {errorMessage && <div style={{ color: 'red' }}>{errorMessage}</div>}
+
             </Stack>
         </Container>
     );

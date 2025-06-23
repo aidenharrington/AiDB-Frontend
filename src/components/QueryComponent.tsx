@@ -3,6 +3,7 @@ import { Box, Tabs, Tab, TextField, Button, Typography, Paper, Stack, Divider, T
 import { executeSql, getQueryHistory, translateNlToSql } from '../service/QueryService';
 import { Query } from "../types/Query";
 import { useAuth } from '../context/AuthProvider';
+import { authGuard } from "../util/AuthGuard";
 
 type Props = {
     onError: (msg: string) => void;
@@ -22,17 +23,14 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
 
     useEffect(() => {
         const fetchHistory = async () => {
-            if (!user || !token) {
-                onError("Not authenticated.");
-                return;
-            }
 
             try {
-                const data = await getQueryHistory(token);
+                const data = await authGuard(user, token, getQueryHistory);
                 setHistory(data);
                 setHistoryStale(false);
-            } catch (err) {
-                onError('Error fetching query history.');
+            } catch (err: any) {
+                console.log(err)
+                onError(err.message);
             }
         };
 
@@ -43,6 +41,9 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
 
     const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: number | null) => {
         if (newMode !== null) setMode(newMode);
+        onError('');
+        setNlQuery('');
+        setSqlQuery('');
     };
 
     const handleEntrySelected = (entry: Query) => {
@@ -62,7 +63,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         onError('');
 
         try {
-            const data = await translateNlToSql(nlQuery);
+            const data = await authGuard(user, token, translateNlToSql, nlQuery);
             setSqlQuery(data);
         } catch (error: unknown) {
             setLoading(false);
