@@ -6,12 +6,12 @@ import { handleHttpError } from '../util/HttpUtil';
 const baseUrl = process.env.REACT_APP_API_BASE_URL || '';
 const queryUrl = `${baseUrl}/queries`;
 
-export const executeSql = async (token: string, sqlQuery: string): Promise<UserQueryData> => {
+export const executeSql = async (token: string, query: Query): Promise<UserQueryData> => {
     try {
-        const response = await axios.post(queryUrl, sqlQuery, {
+        const response = await axios.post(queryUrl, query, {
             headers: {
                 Authorization: `Bearer ${token}`,
-                'Content-Type': 'text/plain',
+                'Content-Type': 'application/json',
             }
         });
 
@@ -23,14 +23,14 @@ export const executeSql = async (token: string, sqlQuery: string): Promise<UserQ
     }
 }
 
-export const translateNlToSql = async (token: string, nlQuery: string): Promise<string> => {
+export const translateNlToSql = async (token: string, query: Query): Promise<Query> => {
     const translateUrl = `${queryUrl}/translate`;
 
     try {
-        const response = await axios.post(translateUrl, nlQuery, {
+        const response = await axios.post(translateUrl, query, {
             headers: {
                 Authorization: `Bearer ${token}`,
-                'Content-Type': 'text/plain',
+                'Content-Type': 'application/json',
             }
         });
 

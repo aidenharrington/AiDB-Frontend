@@ -7,7 +7,7 @@ import { authGuard } from "../util/AuthGuard";
 
 type Props = {
     onError: (msg: string) => void;
-    onSubmit: (sqlQuery: string) => void;
+    onSubmit: (query: Query) => void;
 };
 
 const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
@@ -15,11 +15,14 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
 
     // Mode: 0 = Translator | 1 = SQL | 2 = History
     const [mode, setMode] = useState(0);
-    const [nlQuery, setNlQuery] = useState('');
-    const [sqlQuery, setSqlQuery] = useState('');
     const [history, setHistory] = useState<Query[]>([]);
     const [historyStale, setHistoryStale] = useState(true);
     const [loading, setLoading] = useState<boolean>(false);
+    const [query, setQuery] = useState<Query>({
+        id: null,
+        nlQuery: '',
+        sqlQuery: ''
+    })
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -42,29 +45,31 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: number | null) => {
         if (newMode !== null) setMode(newMode);
         onError('');
-        setNlQuery('');
-        setSqlQuery('');
+        setQuery({
+            id: null,
+            nlQuery: '',
+            sqlQuery: '',
+        });
     };
 
-    const handleEntrySelected = (entry: Query) => {
-        setNlQuery(entry.nlQuery);
-        setSqlQuery(entry.sqlQuery);
-        // TODO: set this to entries mode based off type/if nlquery is present
-        setMode(0);
+    const handleQuerySelected = (query: Query) => {
+        setQuery(query);
+        setMode(query.nlQuery ? 0 : 1);
     }
 
     const handleTranslate = async () => {
-        if (!nlQuery) {
+        if (!query.nlQuery) {
             onError('Please enter text to translate.');
             return;
         }
+
 
         setLoading(true);
         onError('');
 
         try {
-            const data = await authGuard(user, token, translateNlToSql, nlQuery);
-            setSqlQuery(data);
+            const data = await authGuard(user, token, translateNlToSql, query);
+            setQuery(data)
         } catch (error: unknown) {
             setLoading(false);
 
@@ -80,17 +85,22 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     };
 
     const handleSubmit = async () => {
-        const sql = sqlQuery.trim();
+        const sql = query.sqlQuery.trim();
 
         // Remove trailing semicolon
         const cleanedSql = sql.endsWith(';') ? sql.slice(0, -1) : sql;
+
+        const finalQuery: Query = {
+            ...query,
+            sqlQuery: cleanedSql
+        }
 
         if (!cleanedSql) {
             onError('Please enter SQL before submitting.');
         } else {
             setLoading(true);
             onError('');
-            onSubmit(cleanedSql);
+            onSubmit(finalQuery);
             setLoading(false);
             setHistoryStale(true);
         }
@@ -121,8 +131,8 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                         multiline
                         rows={2}
                         fullWidth
-                        value={nlQuery}
-                        onChange={(e) => setNlQuery(e.target.value)}
+                        value={query.nlQuery}
+                        onChange={(e) => setQuery(prev => ({ ...prev, nlQuery: e.target.value }))}
                         disabled={loading}
                     />
                     <TextField
@@ -130,8 +140,8 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                         multiline
                         rows={4}
                         fullWidth
-                        value={sqlQuery}
-                        onChange={(e) => setSqlQuery(e.target.value)}
+                        value={query.sqlQuery}
+                        onChange={(e) => setQuery(prev => ({ ...prev, sqlQuery: e.target.value }))}
                         disabled={loading}
                     />
                     <Box display="flex" gap={2}>
@@ -152,8 +162,8 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                         multiline
                         rows={6}
                         fullWidth
-                        value={sqlQuery}
-                        onChange={(e) => setSqlQuery(e.target.value)}
+                        value={query.sqlQuery}
+                        onChange={(e) => setQuery(prev => ({ ...prev, sqlQuery: e.target.value }))}
                         disabled={loading}
                     />
                     <Button variant="contained" color="success" onClick={handleSubmit} disabled={loading}>
@@ -174,28 +184,31 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                             No queries submitted yet.
                         </Typography>
                     ) : (
-                        history.map((entry, idx) => (
+                        history.map((query, idx) => (
                             <Paper
                                 key={idx}
                                 variant="outlined"
                                 sx={{ mb: 2, p: 2 }}
-                                onClick={() => handleEntrySelected(entry)}    
+                                onClick={() => handleQuerySelected(query)}
                             >
-                                {entry.nlQuery && (
+                                {query.nlQuery && (
                                     <>
                                         <Typography variant="subtitle2">Natural Language:</Typography>
                                         <Typography variant="body2" sx={{ mb: 1 }}>
-                                            {entry.nlQuery}
+                                            {query.nlQuery}
                                         </Typography>
                                     </>
                                 )}
                                 <Typography variant="subtitle2">SQL:</Typography>
                                 <Typography variant="body2" sx={{ mb: 1 }}>
-                                    {entry.sqlQuery}
+                                    {query.sqlQuery}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {new Date(entry.timestamp).toLocaleString()}
-                                </Typography>
+                                {query.timestamp && (
+                                    <Typography variant="caption" color="text.secondary">
+                                        {new Date(query.timestamp).toLocaleString()}
+                                    </Typography>
+                                )}
+
                             </Paper>
                         ))
                     )}
@@ -205,5 +218,6 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         </Paper>
     );
 };
+
 
 export default QueryComponent;

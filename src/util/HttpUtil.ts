@@ -20,6 +20,4 @@ export function handleHttpError(status: number,
     'Unexpected error occurred.';
 
     throw new Error(message);
-
-    
 }

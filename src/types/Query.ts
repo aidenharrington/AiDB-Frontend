@@ -1,7 +1,9 @@
 
 
 export interface Query {
+    id: string | null;
     nlQuery: string;
     sqlQuery: string;
-    timestamp: Date;
+    status?: string;
+    timestamp?: Date;
 }

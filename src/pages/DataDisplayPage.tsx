@@ -8,6 +8,7 @@ import { executeSql } from '../service/QueryService';
 import { UserQueryData } from '../types/UserQueryData';
 import { useAuth } from '../context/AuthProvider';
 import { authGuard } from '../util/AuthGuard';
+import { Query } from '../types/Query';
 
 
 const DataDisplayPage: React.FC = () => {
@@ -56,12 +57,12 @@ const DataDisplayPage: React.FC = () => {
     }
   };
 
-  const handleSqlSubmit = async (sqlQuery: string) => {
+  const handleSqlSubmit = async (query: Query) => {
     setLoading(true);
     setErrorMessage('');
 
     try {
-      const data = await authGuard(user, token, executeSql, sqlQuery);
+      const data = await authGuard(user, token, executeSql, query);
       setUserQueryData(data);
     } catch (error: unknown) {
       setLoading(false);
