@@ -4,6 +4,7 @@ import { executeSql, getQueryHistory, translateNlToSql } from '../service/QueryS
 import { Query } from "../types/Query";
 import { useAuth } from '../context/AuthProvider';
 import { authGuard } from "../util/AuthGuard";
+import { FirestoreTimestampUtil } from "../util/FirestoreTimestampUtil";
 
 type Props = {
     onError: (msg: string) => void;
@@ -12,6 +13,8 @@ type Props = {
 
 const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     const { token, user } = useAuth();
+
+
 
     // Mode: 0 = Translator | 1 = SQL | 2 = History
     const [mode, setMode] = useState(0);
@@ -80,6 +83,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
             }
         } finally {
             setLoading(false);
+            setHistoryStale(true);
         }
 
     };
@@ -104,6 +108,11 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
             setLoading(false);
             setHistoryStale(true);
         }
+    };
+
+    function firestoreTimestampToDate(ts?: { seconds: number; nanos: number }): Date | null {
+        if (!ts) return null;
+        return new Date(ts.seconds * 1000 + Math.floor(ts.nanos / 1_000_000));
     }
 
     return (
@@ -205,7 +214,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                                 </Typography>
                                 {query.timestamp && (
                                     <Typography variant="caption" color="text.secondary">
-                                        {new Date(query.timestamp).toLocaleString()}
+                                        {FirestoreTimestampUtil.formatTimestamp(query.timestamp)}
                                     </Typography>
                                 )}
 
