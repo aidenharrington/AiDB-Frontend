@@ -10,7 +10,9 @@ import { auth } from '../config/firebase';
 import { useNavigate } from 'react-router-dom';
 
 
-const AuthenticationPage: React.FC = () => {
+const AuthPage: React.FC = () => {
+    const ProjectsPage = "/projects";
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
@@ -30,7 +32,7 @@ const AuthenticationPage: React.FC = () => {
                 .catch((err) => setErrorMessage(err.message));
         } else {
             signInWithEmailAndPassword(auth, email, password)
-                .then((user) => navigate("/data"))
+                .then((user) => navigate(ProjectsPage))
                 .catch((err) => setErrorMessage(err.message));
         }
     };
@@ -92,4 +94,4 @@ const AuthenticationPage: React.FC = () => {
     );
 };
 
-export default AuthenticationPage;
+export default AuthPage;

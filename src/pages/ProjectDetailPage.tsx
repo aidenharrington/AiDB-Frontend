@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
-import { uploadExcel } from '../service/ExcelService';
-import { ExcelData } from '../types/ExcelData';
+import { uploadExcel } from '../service/ProjectService';
+import { Project } from '../types/Project';
 import QueryComponent from "../components/QueryComponent";
 import QueryResultsComponent from '../components/QueryResultsComponent';
 import { executeSql } from '../service/QueryService';
@@ -11,11 +11,11 @@ import { authGuard } from '../util/AuthGuard';
 import { Query } from '../types/Query';
 
 
-const DataDisplayPage: React.FC = () => {
+const ProjectDetailPage: React.FC = () => {
   const { token, user } = useAuth();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [excelData, setExcelData] = useState<ExcelData | null>(null);
+  const [excelData, setExcelData] = useState<Project | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -39,22 +39,23 @@ const DataDisplayPage: React.FC = () => {
     setLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
+//TODO - ASAP
+    // try {
+    //   const data = await authGuard(user, token, uploadExcel, selectedFile);
+    //   setSuccessMessage('File uploaded successfully!');
+      
+    //   setExcelData(data);
+    // } catch (error: unknown) {
+    //   setLoading(false);
 
-    try {
-      const data = await authGuard(user, token, uploadExcel, selectedFile);
-      setSuccessMessage('File uploaded successfully!');
-      setExcelData(data);
-    } catch (error: unknown) {
-      setLoading(false);
-
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('An error occured. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    //   if (error instanceof Error) {
+    //     setErrorMessage(error.message);
+    //   } else {
+    //     setErrorMessage('An error occured. Please try again.');
+    //   }
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   const handleSqlSubmit = async (query: Query) => {
@@ -174,4 +175,4 @@ const DataDisplayPage: React.FC = () => {
   );
 };
 
-export default DataDisplayPage;
+export default ProjectDetailPage;

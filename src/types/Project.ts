@@ -11,7 +11,8 @@ export interface Table {
   rows: (string | number | Date | null)[][];
 }
 
-export interface ExcelData {
-  projectName: string;
+export interface Project {
+  id: string;
+  name: string;
   tables: Table[];
 }
