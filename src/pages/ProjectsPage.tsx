@@ -105,9 +105,8 @@ export default function ProjectsPage() {
             >
                 {/* Create Project Button Card */}
                 <motion.div
-                    whileInView={{ scale: 1.05 }}
-                    whileHover={{ scale: 1.08 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     style={{
                         scrollSnapAlign: 'center',
                         flex: '0 0 auto',
@@ -141,9 +140,8 @@ export default function ProjectsPage() {
                 {filteredProjects.map((project) => (
                     <motion.div
                         key={project.id}
-                        whileInView={{ scale: 1.05 }}
-                        whileHover={{ scale: 1.08 }}
-                        transition={{ type: 'spring', stiffness: 300 }}
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         style={{
                             scrollSnapAlign: 'center',
                             flex: '0 0 auto',

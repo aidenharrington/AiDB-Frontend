@@ -110,10 +110,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         }
     };
 
-    function firestoreTimestampToDate(ts?: { seconds: number; nanos: number }): Date | null {
-        if (!ts) return null;
-        return new Date(ts.seconds * 1000 + Math.floor(ts.nanos / 1_000_000));
-    }
+
 
     return (
         <Paper elevation={3} sx={{ p: 2, width: '100%', maxWidth: 800, mx: 'auto' }}>

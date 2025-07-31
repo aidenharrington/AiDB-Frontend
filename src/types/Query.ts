@@ -6,5 +6,5 @@ export interface Query {
     nlQuery: string;
     sqlQuery: string;
     status?: string;
-    timestamp?: Timestamp;
+    timestamp?: Timestamp | string;
 }
