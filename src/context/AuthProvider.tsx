@@ -5,11 +5,13 @@ import { auth } from '../config/firebase';
 interface AuthContextType {
     user: User | null;
     token: string | null;
+    loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     token: null,
+    loading: true,
 });
 
 interface AuthProviderProps {
@@ -19,6 +21,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -28,15 +31,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setToken(idToken);
             } else {
                 setUser(null);
-                setUser(null);
+                setToken(null);
             }
+            setLoading(false);
         });
 
         return () => unsubscribe();
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, token }}>
+        <AuthContext.Provider value={{ user, token, loading }}>
             {children}
         </AuthContext.Provider>
     );

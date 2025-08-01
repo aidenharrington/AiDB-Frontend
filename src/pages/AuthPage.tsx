@@ -28,7 +28,9 @@ const AuthPage: React.FC = () => {
                 return;
             }
             createUserWithEmailAndPassword(auth, email, password)
-                .then((user) => console.log('Signed up: ', user))
+                .then((user) => {
+                    navigate(ProjectsPage);
+                })
                 .catch((err) => setErrorMessage(err.message));
         } else {
             signInWithEmailAndPassword(auth, email, password)
@@ -42,6 +44,7 @@ const AuthPage: React.FC = () => {
         setEmail('');
         setPassword('');
         setConfirmPassword('');
+        setErrorMessage('');
     }
 
     return (

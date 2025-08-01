@@ -1,18 +1,23 @@
 export type ColumnType = 'TEXT' | 'NUMBER' | 'DATE';
 
 export interface Column {
+  id: string;
   name: string;
   type: ColumnType;
 }
 
 export interface Table {
-  name: string;
+  id: string;
+  fileName: string;
+  displayName: string;
+  tableName: string;
   columns: Column[];
-  rows: (string | number | Date | null)[][];
+  rows?: any[][];
 }
 
 export interface Project {
   id: string;
   name: string;
+  userId: string;
   tables: Table[];
 }

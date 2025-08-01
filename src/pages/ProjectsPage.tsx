@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthProvider';
 import { authGuard } from '../util/AuthGuard';
 import { Project } from '../types/Project';
 import { ProjectCreateRequest } from '../types/dtos/ProjectCreateRequest';
+import Navbar from '../components/Navbar';
 
 export default function ProjectsPage() {
     const { token, user } = useAuth();
@@ -31,6 +32,7 @@ export default function ProjectsPage() {
     const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
     const [creating, setCreating] = useState(false);
@@ -38,25 +40,32 @@ export default function ProjectsPage() {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                console.log(user, token);
+                setError(null);
                 const result = await authGuard(user, token, getProjects);
                 setProjects(result);
                 setFilteredProjects(result);
             } catch (error) {
                 console.error('Error fetching projects:', error);
+                setProjects([]);
+                setFilteredProjects([]);
+                setError(error instanceof Error ? error.message : 'Failed to fetch projects');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProjects();
-    }, []);
+        if (user && token) {
+            fetchProjects();
+        }
+    }, [user, token]);
 
     useEffect(() => {
-        const filtered = projects.filter(project =>
-            project.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredProjects(filtered);
+        if (Array.isArray(projects)) {
+            const filtered = projects.filter(project =>
+                project.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            setFilteredProjects(filtered);
+        }
     }, [searchTerm, projects]);
 
     const handleCreateProject = async () => {
@@ -84,62 +93,37 @@ export default function ProjectsPage() {
     }
 
     return (
-        <Box sx={{ p: 4 }}>
-            <TextField
-                fullWidth
-                variant="outlined"
-                label="Search Projects"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                sx={{ mb: 4 }}
-            />
+        <Box>
+            <Navbar />
+            
+            <Box sx={{ p: 4 }}>
+                {error && (
+                    <Box sx={{ mb: 2, p: 2, bgcolor: 'error.light', color: 'error.contrastText', borderRadius: 1 }}>
+                        <Typography variant="body2">
+                            Error: {error}
+                        </Typography>
+                    </Box>
+                )}
+                
+                <TextField
+                    fullWidth
+                    variant="outlined"
+                    label="Search Projects"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    sx={{ mb: 4 }}
+                />
 
-            <Box
-                sx={{
-                    display: 'flex',
-                    overflowX: 'auto',
-                    gap: 4,
-                    scrollSnapType: 'x mandatory',
-                    px: 2,
-                }}
-            >
-                {/* Create Project Button Card */}
-                <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    style={{
-                        scrollSnapAlign: 'center',
-                        flex: '0 0 auto',
-                        width: 300,
-                        cursor: 'pointer',
+                <Box
+                    sx={{
+                        display: 'flex',
+                        overflowX: 'auto',
+                        gap: 4,
+                        scrollSnapType: 'x mandatory',
+                        px: 2,
                     }}
-                    onClick={() => setDialogOpen(true)}
                 >
-                    <Card
-                        elevation={6}
-                        sx={{
-                            height: 180,
-                            borderRadius: 4,
-                            background: theme.palette.background.default,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center',
-                        }}
-                    >
-                        <CardContent>
-                            <Add sx={{ fontSize: 40 }} />
-                            <Typography variant="h6" fontWeight="bold" mt={1}>
-                                Create Project
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-
-                {/* Existing Projects */}
-                {filteredProjects.map((project) => (
                     <motion.div
-                        key={project.id}
                         whileHover={{ scale: 1.02 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         style={{
@@ -148,14 +132,14 @@ export default function ProjectsPage() {
                             width: 300,
                             cursor: 'pointer',
                         }}
-                        onClick={() => navigate(`/projects/${project.id}`)}
+                        onClick={() => setDialogOpen(true)}
                     >
                         <Card
                             elevation={6}
                             sx={{
                                 height: 180,
                                 borderRadius: 4,
-                                background: theme.palette.background.paper,
+                                background: theme.palette.background.default,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -163,37 +147,71 @@ export default function ProjectsPage() {
                             }}
                         >
                             <CardContent>
-                                <Typography variant="h6" fontWeight="bold">
-                                    {project.name}
+                                <Add sx={{ fontSize: 40 }} />
+                                <Typography variant="h6" fontWeight="bold" mt={1}>
+                                    Create Project
                                 </Typography>
                             </CardContent>
                         </Card>
                     </motion.div>
-                ))}
-            </Box>
 
-            {/* Create Project Dialog */}
-            <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>Create New Project</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        label="Project Name"
-                        value={newProjectName}
-                        onChange={(e) => setNewProjectName(e.target.value)}
-                        disabled={creating}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDialogOpen(false)} disabled={creating}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleCreateProject} variant="contained" disabled={creating}>
-                        {creating ? 'Creating...' : 'Create'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                    {Array.isArray(filteredProjects) && filteredProjects.map((project) => (
+                        <motion.div
+                            key={project.id}
+                            whileHover={{ scale: 1.02 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            style={{
+                                scrollSnapAlign: 'center',
+                                flex: '0 0 auto',
+                                width: 300,
+                                cursor: 'pointer',
+                            }}
+                            onClick={() => navigate(`/projects/${project.id}`)}
+                        >
+                            <Card
+                                elevation={6}
+                                sx={{
+                                    height: 180,
+                                    borderRadius: 4,
+                                    background: theme.palette.background.paper,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center',
+                                }}
+                            >
+                                <CardContent>
+                                    <Typography variant="h6" fontWeight="bold">
+                                        {project.name}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </Box>
+
+                <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
+                    <DialogTitle>Create New Project</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            autoFocus
+                            fullWidth
+                            label="Project Name"
+                            value={newProjectName}
+                            onChange={(e) => setNewProjectName(e.target.value)}
+                            disabled={creating}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDialogOpen(false)} disabled={creating}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreateProject} variant="contained" disabled={creating}>
+                            {creating ? 'Creating...' : 'Create'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Box>
         </Box>
     );
 }
