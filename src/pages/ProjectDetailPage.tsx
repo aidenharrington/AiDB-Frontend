@@ -25,7 +25,7 @@ const ProjectDetailPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [userQueryData, setUserQueryData] = useState<UserQueryData | null>(null);
 
-  const hasTables = project && project.tables && project.tables.length > 0;
+  const hasTables = project?.tables && project.tables.length > 0;
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -125,7 +125,7 @@ const ProjectDetailPage: React.FC = () => {
                 minHeight: 400, // Maintain consistent height
               }}
             >
-              {project.tables.map((table, index) => (
+              {project.tables?.map((table, index) => (
                 <motion.div
                   key={index}
                   whileHover={{ scale: 1.02 }}
@@ -158,7 +158,7 @@ const ProjectDetailPage: React.FC = () => {
                       <Table stickyHeader>
                         <TableHead>
                           <TableRow>
-                            {table.columns.map((col, i) => (
+                            {table.columns?.map((col, i) => (
                               <TableCell key={i} sx={{ fontWeight: 'bold', backgroundColor: theme.palette.grey[100] }}>
                                 {col.name}
                               </TableCell>
