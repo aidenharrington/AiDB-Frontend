@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Project } from '../types/Project';
 import { handleHttpError } from '../util/HttpUtil';
 import { ProjectCreateRequest } from '../types/dtos/ProjectCreateRequest';
+import { APIResponse, Tier } from '../types/Tier';
 
 const baseUrl = process.env.REACT_APP_API_BASE_URL || '';
 
@@ -9,32 +10,38 @@ const projectsUrl = `${baseUrl}/projects`;
 const projectUrl = (id: string) => `${projectsUrl}/${id}`;
 
 
-export const getProjects = async (token: string): Promise<Project[]> => {
+export const getProjects = async (token: string): Promise<{ projects: Project[], tier: Tier | null }> => {
 
   try {
-    const response = await axios.get(projectsUrl, {
+    const response = await axios.get<APIResponse<Project[]>>(projectsUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       }
     })
 
-    return response.data;
+    return {
+      projects: response.data.data,
+      tier: response.data.meta.tier
+    };
   } catch (error: any) {
     handleHttpError(error?.response?.status, error);
     // This line will never be reached due to handleHttpError throwing, but TypeScript needs it
-    return [];
+    return { projects: [], tier: null };
   }
 }
 
-export const getProject = async (token: string, projectId: string): Promise<Project> => {
+export const getProject = async (token: string, projectId: string): Promise<{ project: Project, tier: Tier | null }> => {
   try {
-    const response = await axios.get(projectUrl(projectId), {
+    const response = await axios.get<APIResponse<Project>>(projectUrl(projectId), {
       headers: {
         Authorization: `Bearer ${token}`,
       }
     });
 
-    return response.data;
+    return {
+      project: response.data.data,
+      tier: response.data.meta.tier
+    };
   } catch (error: any) {
     handleHttpError(error?.response?.status, error);
     // This line will never be reached due to handleHttpError throwing, but TypeScript needs it
@@ -42,16 +49,19 @@ export const getProject = async (token: string, projectId: string): Promise<Proj
   }
 }
 
-export const createProject = async (token: string, projectCreateRequest: ProjectCreateRequest): Promise<Project> => {
+export const createProject = async (token: string, projectCreateRequest: ProjectCreateRequest): Promise<{ project: Project, tier: Tier | null }> => {
   try {
-    const response = await axios.post(projectsUrl, projectCreateRequest, {
+    const response = await axios.post<APIResponse<Project>>(projectsUrl, projectCreateRequest, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       }
     });
 
-    return response.data;
+    return {
+      project: response.data.data,
+      tier: response.data.meta.tier
+    };
   } catch (error: any) {
     handleHttpError(error?.response?.status, error);
     // This line will never be reached due to handleHttpError throwing, but TypeScript needs it
@@ -59,7 +69,7 @@ export const createProject = async (token: string, projectCreateRequest: Project
   }
 }
 
-export const uploadExcel = async (token: string, projectId: string, file: File): Promise<Project> => {
+export const uploadExcel = async (token: string, projectId: string, file: File): Promise<{ project: Project, tier: Tier | null }> => {
   const uploadExcelUrl = (id: string) => `${projectUrl(id)}/upload`;
   
   const formData = new FormData();
@@ -67,14 +77,17 @@ export const uploadExcel = async (token: string, projectId: string, file: File):
 
 
   try {
-    const response = await axios.post(uploadExcelUrl(projectId), formData, {
+    const response = await axios.post<APIResponse<Project>>(uploadExcelUrl(projectId), formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
       },
     });
 
-    return response.data;
+    return {
+      project: response.data.data,
+      tier: response.data.meta.tier
+    };
   } catch (error: any) {
     handleHttpError(error?.response?.status, error, {
       422: 'Data validation failed. Please check the file contents.',

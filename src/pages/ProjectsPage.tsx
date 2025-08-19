@@ -18,15 +18,20 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { getProjects, createProject } from '../service/ProjectService';
 import { useAuth } from '../context/AuthProvider';
+import { useTier } from '../context/TierProvider';
 import { authGuard } from '../util/AuthGuard';
 import { Project } from '../types/Project';
 import { ProjectCreateRequest } from '../types/dtos/ProjectCreateRequest';
 import Navbar from '../components/Navbar';
+import { formatLimitDisplay, isLimitReached } from '../util/LimitDisplayUtil';
 
 export default function ProjectsPage() {
     const { token, user } = useAuth();
+    const { updateTierIfNotNull, tier, fetchTierIfNeeded } = useTier();
     const theme = useTheme();
     const navigate = useNavigate();
+    
+
 
     const [projects, setProjects] = useState<Project[]>([]);
     const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
@@ -42,8 +47,14 @@ export default function ProjectsPage() {
             try {
                 setError(null);
                 const result = await authGuard(user, token, getProjects);
-                setProjects(result);
-                setFilteredProjects(result);
+                setProjects(result.projects);
+                setFilteredProjects(result.projects);
+                updateTierIfNotNull(result.tier);
+                
+                // If no tier info was returned, try to fetch it separately
+                if (!result.tier && token) {
+                    await fetchTierIfNeeded(token);
+                }
             } catch (error) {
                 console.error('Error fetching projects:', error);
                 setProjects([]);
@@ -57,7 +68,7 @@ export default function ProjectsPage() {
         if (user && token) {
             fetchProjects();
         }
-    }, [user, token]);
+    }, [user, token, fetchTierIfNeeded]);
 
     useEffect(() => {
         if (Array.isArray(projects)) {
@@ -70,13 +81,25 @@ export default function ProjectsPage() {
 
     const handleCreateProject = async () => {
         if (!newProjectName.trim()) return;
+        
+        // Check project limit
+        if (tier) {
+            if (isLimitReached(tier.projectLimitUsage, tier.projectLimit)) {
+                const limit = parseInt(tier.projectLimit);
+                const limitText = limit === -1 ? '∞' : limit.toString();
+                setError(`You have reached your project limit of ${limitText} for your ${tier.name} tier.`);
+                return;
+            }
+        }
+        
         setCreating(true);
         try {
             const projectCreateRequest: ProjectCreateRequest = { name: newProjectName }
-            const newProject = await authGuard(user, token, createProject, projectCreateRequest);
+            const result = await authGuard(user, token, createProject, projectCreateRequest);
             setDialogOpen(false);
             setNewProjectName('');
-            navigate(`/projects/${newProject.id}`);
+            updateTierIfNotNull(result.tier);
+            navigate(`/projects/${result.project.id}`);
         } catch (error) {
             console.error('Failed to create project:', error);
         } finally {
@@ -104,6 +127,8 @@ export default function ProjectsPage() {
                         </Typography>
                     </Box>
                 )}
+                
+
                 
                 <TextField
                     fullWidth
@@ -190,6 +215,14 @@ export default function ProjectsPage() {
                     ))}
                 </Box>
 
+                {tier && (
+                    <Box sx={{ mt: 3, textAlign: 'left' }}>
+                        <Typography variant="body2" color="text.secondary">
+                            {tier.name} Tier: {formatLimitDisplay(tier.projectLimitUsage, tier.projectLimit)} projects used
+                        </Typography>
+                    </Box>
+                )}
+
                 <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
                     <DialogTitle>Create New Project</DialogTitle>
                     <DialogContent>
@@ -206,7 +239,11 @@ export default function ProjectsPage() {
                         <Button onClick={() => setDialogOpen(false)} disabled={creating}>
                             Cancel
                         </Button>
-                        <Button onClick={handleCreateProject} variant="contained" disabled={creating}>
+                        <Button 
+                            onClick={handleCreateProject} 
+                            variant="contained" 
+                            disabled={creating || (tier ? isLimitReached(tier.projectLimitUsage, tier.projectLimit) : false)}
+                        >
                             {creating ? 'Creating...' : 'Create'}
                         </Button>
                     </DialogActions>
