@@ -15,7 +15,7 @@ type Props = {
 
 const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     const { token, user } = useAuth();
-    const { updateTierIfNotNull, tier, fetchTierIfNeeded } = useTier();
+    const { updateTierIfNotNull, tier } = useTier();
 
 
 
@@ -37,12 +37,6 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                 const result = await authGuard(user, token, getQueryHistory);
                 setHistory(result.queries);
                 updateTierIfNotNull(result.tier);
-                
-                // If no tier info was returned, try to fetch it separately
-                if (!result.tier && token) {
-                    await fetchTierIfNeeded(token);
-                }
-                
                 setHistoryStale(false);
             } catch (err: any) {
                 console.log(err)
@@ -53,7 +47,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         if (mode === 2 && historyStale) {
             fetchHistory();
         }
-    }, [mode, updateTierIfNotNull, fetchTierIfNeeded]);
+    }, [mode, updateTierIfNotNull]);
 
     const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: number | null) => {
         if (newMode !== null) setMode(newMode);

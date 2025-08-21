@@ -42,6 +42,13 @@ export default function ProjectsPage() {
     const [newProjectName, setNewProjectName] = useState('');
     const [creating, setCreating] = useState(false);
 
+    // Fetch tier info if needed when page loads
+    useEffect(() => {
+        if (token && !tier) {
+            fetchTierIfNeeded(token);
+        }
+    }, [token, tier, fetchTierIfNeeded]);
+
     useEffect(() => {
         const fetchProjects = async () => {
             try {
@@ -50,11 +57,6 @@ export default function ProjectsPage() {
                 setProjects(result.projects);
                 setFilteredProjects(result.projects);
                 updateTierIfNotNull(result.tier);
-                
-                // If no tier info was returned, try to fetch it separately
-                if (!result.tier && token) {
-                    await fetchTierIfNeeded(token);
-                }
             } catch (error) {
                 console.error('Error fetching projects:', error);
                 setProjects([]);
@@ -68,7 +70,7 @@ export default function ProjectsPage() {
         if (user && token) {
             fetchProjects();
         }
-    }, [user, token, fetchTierIfNeeded]);
+    }, [user, token, updateTierIfNotNull]);
 
     useEffect(() => {
         if (Array.isArray(projects)) {

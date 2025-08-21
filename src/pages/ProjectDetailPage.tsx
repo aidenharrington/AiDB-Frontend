@@ -31,6 +31,13 @@ const ProjectDetailPage: React.FC = () => {
 
   const hasTables = project?.tables && project.tables.length > 0;
 
+  // Fetch tier info if needed when page loads
+  useEffect(() => {
+    if (token && !tier) {
+      fetchTierIfNeeded(token);
+    }
+  }, [token, tier, fetchTierIfNeeded]);
+
   useEffect(() => {
     const fetchProject = async () => {
         try {
@@ -38,11 +45,6 @@ const ProjectDetailPage: React.FC = () => {
             const result = await authGuard(user, token, getProject, projectId!);
             setProject(result.project);
             updateTierIfNotNull(result.tier);
-            
-            // If no tier info was returned, try to fetch it separately
-            if (!result.tier && token) {
-                await fetchTierIfNeeded(token);
-            }
         } catch (error) {
             console.error('Error fetching projects:', error);
             setProject(null);
@@ -55,7 +57,7 @@ const ProjectDetailPage: React.FC = () => {
     if (user && token) {
         fetchProject();
     }
-}, [user, token, updateTierIfNotNull, fetchTierIfNeeded]);
+}, [user, token, updateTierIfNotNull]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
