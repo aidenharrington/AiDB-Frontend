@@ -5,6 +5,7 @@ import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
 import AuthPage from './pages/AuthPage';
 import { AuthProvider, useAuth } from './context/AuthProvider';
+import { TierProvider } from './context/TierProvider';
 import { Box, CircularProgress } from '@mui/material';
 
 interface ProtectedRouteProps {
@@ -68,11 +69,13 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AuthProvider>
+    <TierProvider>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
+    </TierProvider>
   );
 };
 

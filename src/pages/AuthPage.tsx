@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useNavigate } from 'react-router-dom';
+import { setupNewUser } from '../service/UserService';
 
 
 const AuthPage: React.FC = () => {
@@ -21,21 +22,33 @@ const AuthPage: React.FC = () => {
 
     const navigate = useNavigate();
 
-    const handleAuth = () => {
+    const handleAuth = async () => {
         if (isRegistering) {
             if (password !== confirmPassword) {
                 setErrorMessage("Passwords do not match.");
                 return;
             }
-            createUserWithEmailAndPassword(auth, email, password)
-                .then((user) => {
-                    navigate(ProjectsPage);
-                })
-                .catch((err) => setErrorMessage(err.message));
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Get the Firebase ID token
+                const idToken = await user.getIdToken();
+                
+                // Call backend to setup user in database
+                const { user: userData, tier } = await setupNewUser(idToken);
+                
+                navigate(ProjectsPage);
+            } catch (err: any) {
+                setErrorMessage(err.message);
+            }
         } else {
-            signInWithEmailAndPassword(auth, email, password)
-                .then((user) => navigate(ProjectsPage))
-                .catch((err) => setErrorMessage(err.message));
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                navigate(ProjectsPage);
+            } catch (err: any) {
+                setErrorMessage(err.message);
+            }
         }
     };
 

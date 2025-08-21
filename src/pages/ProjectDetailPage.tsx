@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, useTheme } from '@mui/material';
+import { CloudUpload as UploadIcon } from '@mui/icons-material';
 import { useParams } from 'react-router-dom';
-import { getProject, getProjects, uploadExcel } from '../service/ProjectService';
+import { getProject, uploadExcel } from '../service/ProjectService';
 import { Project } from '../types/Project';
 import QueryComponent from "../components/QueryComponent";
 import QueryResultsComponent from '../components/QueryResultsComponent';
 import { executeSql } from '../service/QueryService';
 import { UserQueryData } from '../types/UserQueryData';
 import { useAuth } from '../context/AuthProvider';
+import { useTier } from '../context/TierProvider';
 import { authGuard } from '../util/AuthGuard';
 import { Query } from '../types/Query';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
+import { isLimitReached } from '../util/LimitDisplayUtil';
 
 const ProjectDetailPage: React.FC = () => {
   const { token, user } = useAuth();
+  const { updateTierIfNotNull, tier, fetchTierIfNeeded } = useTier();
   const { projectId } = useParams<{ projectId: string }>();
   const theme = useTheme();
 
@@ -27,12 +31,20 @@ const ProjectDetailPage: React.FC = () => {
 
   const hasTables = project?.tables && project.tables.length > 0;
 
+  // Fetch tier info if needed when page loads
+  useEffect(() => {
+    if (token && !tier) {
+      fetchTierIfNeeded(token);
+    }
+  }, [token, tier, fetchTierIfNeeded]);
+
   useEffect(() => {
     const fetchProject = async () => {
         try {
             setErrorMessage('');
             const result = await authGuard(user, token, getProject, projectId!);
-            setProject(result);
+            setProject(result.project);
+            updateTierIfNotNull(result.tier);
         } catch (error) {
             console.error('Error fetching projects:', error);
             setProject(null);
@@ -45,12 +57,24 @@ const ProjectDetailPage: React.FC = () => {
     if (user && token) {
         fetchProject();
     }
-}, [user, token]);
+}, [user, token, updateTierIfNotNull]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
+      const file = event.target.files[0];
+      const maxFileSizeMB = tier?.maxFileSize ? parseInt(tier.maxFileSize) : 500; // Default to 500MB
+      const fileSizeMB = file.size / (1024 * 1024);
+      
+      // Skip validation if maxFileSize is -1 (unlimited)
+      if (maxFileSizeMB !== -1 && fileSizeMB > maxFileSizeMB) {
+        setErrorMessage(`File size (${fileSizeMB.toFixed(1)}MB) exceeds the maximum allowed size of ${maxFileSizeMB}MB for your ${tier?.name || 'Free'} tier.`);
+        setSelectedFile(null);
+        return;
+      }
+      
+      setSelectedFile(file);
+      setErrorMessage('');
     }
   };
 
@@ -65,10 +89,11 @@ const ProjectDetailPage: React.FC = () => {
     setSuccessMessage('');
     
     try {
-      const data = await authGuard(user, token, uploadExcel, projectId!, selectedFile);
+      const result = await authGuard(user, token, uploadExcel, projectId!, selectedFile);
       setSuccessMessage('File uploaded successfully!');
       
-      setProject(data);
+      setProject(result.project);
+      updateTierIfNotNull(result.tier);
     } catch (error: unknown) {
       setLoading(false);
 
@@ -89,8 +114,9 @@ const ProjectDetailPage: React.FC = () => {
     setErrorMessage('');
 
     try {
-      const data = await authGuard(user, token, executeSql, query);
-      setUserQueryData(data);
+      const result = await authGuard(user, token, executeSql, query);
+      setUserQueryData(result.data);
+      updateTierIfNotNull(result.tier);
     } catch (error: unknown) {
       setLoading(false);
 
@@ -211,6 +237,8 @@ const ProjectDetailPage: React.FC = () => {
           )}
         </Box>
 
+
+
         {/* Query Components */}
         <Box sx={{ mb: 4 }}>
           <QueryComponent onError={setErrorMessage} onSubmit={handleSqlSubmit} />
@@ -221,35 +249,47 @@ const ProjectDetailPage: React.FC = () => {
         </Box>
 
         {/* File Upload Section */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <input
-            type="file"
-            accept=".xlsx"
-            style={{ display: 'none' }}
-            id="excel-upload"
-            onChange={handleFileChange}
-          />
-          <label htmlFor="excel-upload">
-            <Button variant="contained" component="span">
-              Select Excel File
-            </Button>
-          </label>
-
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleUpload}
-            disabled={!selectedFile || loading}
-          >
-            {loading ? 'Uploading...' : 'Upload'}
-          </Button>
-        </Box>
-
-        {selectedFile && (
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Selected File: {selectedFile.name}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Upload Excel File
           </Typography>
-        )}
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              style={{ display: 'none' }}
+              id="excel-upload"
+              onChange={handleFileChange}
+            />
+            <label htmlFor="excel-upload">
+              <Button variant="outlined" component="span" startIcon={<UploadIcon />}>
+                Choose File
+              </Button>
+            </label>
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleUpload}
+              disabled={!selectedFile || loading}
+            >
+              {loading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </Box>
+
+          {selectedFile && (
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              Selected File: {selectedFile.name}
+            </Typography>
+          )}
+
+          {tier && (
+            <Typography variant="body2" color="text.secondary">
+              Maximum file size: {parseInt(tier.maxFileSize) === -1 ? '∞' : `${tier.maxFileSize}MB`} • Accepts .xlsx files only
+            </Typography>
+          )}
+        </Box>
 
         {errorMessage && (
           <Typography variant="body1" sx={{ color: 'error.main', mb: 2 }}>

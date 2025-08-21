@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase'; 
+import { useTier } from './TierProvider';
 
 interface AuthContextType {
     user: User | null;
@@ -18,10 +19,11 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+const AuthProviderContent: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const { fetchTierIfNeeded } = useTier();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -29,6 +31,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setUser(firebaseUser);
                 const idToken = await firebaseUser.getIdToken();
                 setToken(idToken);
+                // Fetch tier info when user logs in
+                await fetchTierIfNeeded(idToken);
             } else {
                 setUser(null);
                 setToken(null);
@@ -37,12 +41,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [fetchTierIfNeeded]);
 
     return (
         <AuthContext.Provider value={{ user, token, loading }}>
             {children}
         </AuthContext.Provider>
+    );
+};
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+    return (
+        <AuthProviderContent>
+            {children}
+        </AuthProviderContent>
     );
 };
 

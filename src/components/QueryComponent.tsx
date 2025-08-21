@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Box, Tabs, Tab, TextField, Button, Typography, Paper, Stack, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import { executeSql, getQueryHistory, translateNlToSql } from '../service/QueryService';
+import { Box, TextField, Button, Typography, Paper, Stack, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { getQueryHistory, translateNlToSql } from '../service/QueryService';
 import { Query } from "../types/Query";
 import { useAuth } from '../context/AuthProvider';
+import { useTier } from '../context/TierProvider';
 import { authGuard } from "../util/AuthGuard";
 import { FirestoreTimestampUtil } from "../util/FirestoreTimestampUtil";
+import { formatLimitDisplay, isLimitReached } from '../util/LimitDisplayUtil';
 
 type Props = {
     onError: (msg: string) => void;
@@ -13,6 +15,7 @@ type Props = {
 
 const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     const { token, user } = useAuth();
+    const { updateTierIfNotNull, tier } = useTier();
 
 
 
@@ -31,8 +34,9 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         const fetchHistory = async () => {
 
             try {
-                const data = await authGuard(user, token, getQueryHistory);
-                setHistory(data);
+                const result = await authGuard(user, token, getQueryHistory);
+                setHistory(result.queries);
+                updateTierIfNotNull(result.tier);
                 setHistoryStale(false);
             } catch (err: any) {
                 console.log(err)
@@ -43,7 +47,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         if (mode === 2 && historyStale) {
             fetchHistory();
         }
-    }, [mode]);
+    }, [mode, updateTierIfNotNull]);
 
     const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: number | null) => {
         if (newMode !== null) setMode(newMode);
@@ -66,13 +70,23 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
             return;
         }
 
+        // Check translation limit
+        if (tier) {
+            if (isLimitReached(tier.translationLimitUsage, tier.translationLimit)) {
+                const limit = parseInt(tier.translationLimit);
+                const limitText = limit === -1 ? '∞' : limit.toString();
+                onError(`You have reached your translation limit of ${limitText} for your ${tier.name} tier.`);
+                return;
+            }
+        }
 
         setLoading(true);
         onError('');
 
         try {
-            const data = await authGuard(user, token, translateNlToSql, query);
-            setQuery(data)
+            const result = await authGuard(user, token, translateNlToSql, query);
+            setQuery(result.query);
+            updateTierIfNotNull(result.tier);
         } catch (error: unknown) {
             setLoading(false);
 
@@ -102,6 +116,16 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         if (!cleanedSql) {
             onError('Please enter SQL before submitting.');
         } else {
+            // Check query limit
+            if (tier) {
+                if (isLimitReached(tier.queryLimitUsage, tier.queryLimit)) {
+                    const limit = parseInt(tier.queryLimit);
+                    const limitText = limit === -1 ? '∞' : limit.toString();
+                    onError(`You have reached your query limit of ${limitText} for your ${tier.name} tier.`);
+                    return;
+                }
+            }
+            
             setLoading(true);
             onError('');
             onSubmit(finalQuery);
@@ -114,7 +138,57 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
 
     return (
         <Paper elevation={3} sx={{ p: 2, width: '100%', maxWidth: 800, mx: 'auto' }}>
-            <Box display="flex" justifyContent="flex-end">
+            <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1, border: 1, borderColor: 'divider' }}>
+                {tier ? (
+                    <>
+                        <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main' }}>
+                            {tier.name} Tier - Query Usage
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 4 }}>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" color="text.secondary">SQL Queries</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography 
+                                        variant="body1" 
+                                        fontWeight="bold"
+                                        color={isLimitReached(tier.queryLimitUsage, tier.queryLimit) ? 'error.main' : 'text.primary'}
+                                    >
+                                        {formatLimitDisplay(tier.queryLimitUsage, tier.queryLimit)}
+                                    </Typography>
+                                    {isLimitReached(tier.queryLimitUsage, tier.queryLimit) && (
+                                        <Typography variant="caption" sx={{ px: 1, py: 0.5, bgcolor: 'error.light', color: 'error.contrastText', borderRadius: 0.5 }}>
+                                            LIMIT REACHED
+                                        </Typography>
+                                    )}
+                                </Box>
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" color="text.secondary">NL → SQL Translations</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography 
+                                        variant="body1" 
+                                        fontWeight="bold"
+                                        color={isLimitReached(tier.translationLimitUsage, tier.translationLimit) ? 'error.main' : 'text.primary'}
+                                    >
+                                        {formatLimitDisplay(tier.translationLimitUsage, tier.translationLimit)}
+                                    </Typography>
+                                    {isLimitReached(tier.translationLimitUsage, tier.translationLimit) && (
+                                        <Typography variant="caption" sx={{ px: 1, py: 0.5, bgcolor: 'error.light', color: 'error.contrastText', borderRadius: 0.5 }}>
+                                            LIMIT REACHED
+                                        </Typography>
+                                    )}
+                                </Box>
+                            </Box>
+                        </Box>
+                    </>
+                ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        Loading tier information...
+                    </Typography>
+                )}
+            </Box>
+
+            <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
                 <ToggleButtonGroup
                     value={mode}
                     exclusive
@@ -151,10 +225,19 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                         disabled={loading}
                     />
                     <Box display="flex" gap={2}>
-                        <Button variant="contained" onClick={handleTranslate} disabled={loading}>
+                        <Button 
+                            variant="contained" 
+                            onClick={handleTranslate} 
+                            disabled={loading || (tier ? isLimitReached(tier.translationLimitUsage, tier.translationLimit) : false)}
+                        >
                             Translate
                         </Button>
-                        <Button variant="contained" color="success" onClick={handleSubmit} disabled={loading}>
+                        <Button 
+                            variant="contained" 
+                            color="success" 
+                            onClick={handleSubmit} 
+                            disabled={loading || (tier ? isLimitReached(tier.queryLimitUsage, tier.queryLimit) : false)}
+                        >
                             Send SQL
                         </Button>
                     </Box>
@@ -172,7 +255,12 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                         onChange={(e) => setQuery(prev => ({ ...prev, sqlQuery: e.target.value }))}
                         disabled={loading}
                     />
-                    <Button variant="contained" color="success" onClick={handleSubmit} disabled={loading}>
+                    <Button 
+                        variant="contained" 
+                        color="success" 
+                        onClick={handleSubmit} 
+                        disabled={loading || (tier ? isLimitReached(tier.queryLimitUsage, tier.queryLimit) : false)}
+                    >
                         Send SQL
                     </Button>
                 </Stack>
