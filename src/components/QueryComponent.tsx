@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Box, TextField, Button, Typography, Paper, Stack, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { getQueryHistory, translateNlToSql } from '../service/QueryService';
 import { Query } from "../types/Query";
@@ -17,8 +17,6 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     const { token, user } = useAuth();
     const { updateTierIfNotNull, tier } = useTier();
 
-
-
     // Mode: 0 = Translator | 1 = SQL | 2 = History
     const [mode, setMode] = useState(0);
     const [history, setHistory] = useState<Query[]>([]);
@@ -28,7 +26,44 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         id: null,
         nlQuery: '',
         sqlQuery: ''
-    })
+    });
+
+    // New state variables for translation management
+    const [hasTranslated, setHasTranslated] = useState<boolean>(false);
+    const nlInputRef = useRef<string>('');
+
+
+    // Handle natural language input changes
+    const handleNlInputChange = (value: string) => {
+        // If the input has changed from what was last translated, create a completely new query
+        if (value !== nlInputRef.current) {
+            setHasTranslated(false);
+            setQuery({
+                id: null,
+                nlQuery: value,
+                sqlQuery: '' // Clear SQL when NL input changes
+            });
+        } else {
+            // Same input, just update the nlQuery
+            setQuery(prev => ({
+                ...prev,
+                nlQuery: value
+            }));
+        }
+    };
+
+    // Handle SQL input changes
+    const handleSqlInputChange = (value: string) => {
+        setQuery(prev => ({
+            ...prev,
+            sqlQuery: value
+        }));
+        
+        // If user manually changes SQL, mark as not translated
+        if (hasTranslated) {
+            setHasTranslated(false);
+        }
+    };
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -57,16 +92,35 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
             nlQuery: '',
             sqlQuery: '',
         });
+        // Reset translation state when changing modes
+        setHasTranslated(false);
+        nlInputRef.current = '';
     };
 
     const handleQuerySelected = (query: Query) => {
         setQuery(query);
         setMode(query.nlQuery ? 0 : 1);
+        
+        // If the query has both NL and SQL content, treat it as already translated
+        if (query.nlQuery && query.sqlQuery) {
+            setHasTranslated(true);
+            nlInputRef.current = query.nlQuery;
+        } else {
+            // Reset translation state for queries without SQL content
+            setHasTranslated(false);
+            nlInputRef.current = query.nlQuery || '';
+        }
     }
 
     const handleTranslate = async () => {
         if (!query.nlQuery) {
             onError('Please enter text to translate.');
+            return;
+        }
+
+        // Prevent duplicate translation for the same input
+        if (hasTranslated && query.nlQuery === nlInputRef.current) {
+            onError('This input has already been translated. Please modify the text to translate again.');
             return;
         }
 
@@ -87,6 +141,10 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
             const result = await authGuard(user, token, translateNlToSql, query);
             setQuery(result.query);
             updateTierIfNotNull(result.tier);
+            
+            // Mark as translated and store the current input
+            setHasTranslated(true);
+            nlInputRef.current = query.nlQuery;
         } catch (error: unknown) {
             setLoading(false);
 
@@ -212,26 +270,58 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                         rows={2}
                         fullWidth
                         value={query.nlQuery}
-                        onChange={(e) => setQuery(prev => ({ ...prev, nlQuery: e.target.value }))}
+                        onChange={(e) => handleNlInputChange(e.target.value)}
                         disabled={loading}
                     />
-                    <TextField
-                        label="Generated SQL"
-                        multiline
-                        rows={4}
-                        fullWidth
-                        value={query.sqlQuery}
-                        onChange={(e) => setQuery(prev => ({ ...prev, sqlQuery: e.target.value }))}
-                        disabled={loading}
-                    />
+                    <Box>
+                        <TextField
+                            label="Generated SQL"
+                            multiline
+                            rows={4}
+                            fullWidth
+                            value={query.sqlQuery}
+                            onChange={(e) => handleSqlInputChange(e.target.value)}
+                            disabled={loading}
+                        />
+                        {hasTranslated && query.sqlQuery && (
+                            <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                    display: 'block', 
+                                    mt: 0.5, 
+                                    color: 'success.main',
+                                    fontStyle: 'italic'
+                                }}
+                            >
+                                ✓ Translation completed
+                            </Typography>
+                        )}
+                    </Box>
                     <Box display="flex" gap={2}>
                         <Button 
                             variant="contained" 
                             onClick={handleTranslate} 
-                            disabled={loading || (tier ? isLimitReached(tier.translationLimitUsage, tier.translationLimit) : false)}
+                            disabled={loading || 
+                                (tier ? isLimitReached(tier.translationLimitUsage, tier.translationLimit) : false) ||
+                                hasTranslated ||
+                                !query.nlQuery.trim()
+                            }
                         >
-                            Translate
+                            {hasTranslated ? 'Already Translated' : 'Translate'}
                         </Button>
+                        {hasTranslated && (
+                            <Button 
+                                variant="outlined" 
+                                onClick={() => {
+                                    setHasTranslated(false);
+                                    setQuery(prev => ({ ...prev, sqlQuery: '' }));
+                                    nlInputRef.current = '';
+                                }}
+                                disabled={loading}
+                            >
+                                Reset Translation
+                            </Button>
+                        )}
                         <Button 
                             variant="contained" 
                             color="success" 
@@ -252,7 +342,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
                         rows={6}
                         fullWidth
                         value={query.sqlQuery}
-                        onChange={(e) => setQuery(prev => ({ ...prev, sqlQuery: e.target.value }))}
+                        onChange={(e) => handleSqlInputChange(e.target.value)}
                         disabled={loading}
                     />
                     <Button 
