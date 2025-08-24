@@ -92,7 +92,15 @@ const ProjectDetailPage: React.FC = () => {
       const result = await authGuard(user, token, uploadExcel, projectId!, selectedFile);
       setSuccessMessage('File uploaded successfully!');
       
-      setProject(result.project);
+      // Concatenate new tables to existing project instead of replacing entire project
+      if (project && result.project) {
+        setProject({
+          ...project,
+          tables: [...project.tables, ...result.project.tables]
+        });
+      } else {
+        setProject(result.project);
+      }
       updateTierIfNotNull(result.tier);
     } catch (error: unknown) {
       setLoading(false);
