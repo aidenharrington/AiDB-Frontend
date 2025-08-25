@@ -249,7 +249,11 @@ const ProjectDetailPage: React.FC = () => {
 
         {/* Query Components */}
         <Box sx={{ mb: 4 }}>
-          <QueryComponent onError={setErrorMessage} onSubmit={handleSqlSubmit} />
+          <QueryComponent 
+            projectId={projectId!} 
+            onError={setErrorMessage} 
+            onSubmit={handleSqlSubmit} 
+          />
         </Box>
         
         <Box sx={{ mb: 4 }}>

@@ -20,7 +20,8 @@ const QueryResultsComponent: React.FC<Props> = ({ data }) => {
         return null;
     }
 
-    const headers = Object.keys(data[0]);
+    // Filter out 'id' column from headers
+    const headers = Object.keys(data[0]).filter(header => header.toLowerCase() !== 'id');
 
     const formatCellValue = (value: any): string => {
         // Handle null/undefined
@@ -33,7 +34,11 @@ const QueryResultsComponent: React.FC<Props> = ({ data }) => {
             try {
                 const date = new Date(value);
                 if (!isNaN(date.getTime())) {
-                    return date.toLocaleString();
+                    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
                 }
             } catch (error) {
                 // If parsing fails, return as string
@@ -71,7 +76,7 @@ const QueryResultsComponent: React.FC<Props> = ({ data }) => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {data.slice(1).map((row, rowIdx) => (
+                        {data.map((row, rowIdx) => (
                             <TableRow key={rowIdx}>
                                 {headers.map((header, cellIdx) => (
                                     <TableCell key={cellIdx}>

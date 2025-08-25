@@ -10,12 +10,21 @@ export class FirestoreTimestampUtil {
 
       // If already Firestore Timestamp instance, use toDate()
       if (ts instanceof Timestamp) {
-        return ts.toDate().toLocaleString();
+        const date = ts.toDate();
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
       }
 
       // If it's a Date object
       if (ts instanceof Date) {
-        return ts.toLocaleString();
+        return ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
       }
 
       // If it's a string (ISO date string), parse it
@@ -23,7 +32,11 @@ export class FirestoreTimestampUtil {
         try {
           const date = new Date(ts);
           if (!isNaN(date.getTime())) {
-            return date.toLocaleString();
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              second: '2-digit'
+            });
           }
         } catch (error) {
           console.warn('Failed to parse timestamp string:', ts);
@@ -34,7 +47,12 @@ export class FirestoreTimestampUtil {
       // Else if plain object with seconds and nanos, convert to Timestamp then toDate()
       if (typeof ts === 'object' && ts !== null && 'seconds' in ts && 'nanos' in ts) {
         const firestoreTs = new Timestamp(ts.seconds, ts.nanos);
-        return firestoreTs.toDate().toLocaleString();
+        const date = firestoreTs.toDate();
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
       }
   
       return "";

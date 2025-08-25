@@ -9,11 +9,12 @@ import { FirestoreTimestampUtil } from "../util/FirestoreTimestampUtil";
 import { formatLimitDisplay, isLimitReached } from '../util/LimitDisplayUtil';
 
 type Props = {
+    projectId: string;
     onError: (msg: string) => void;
     onSubmit: (query: Query) => void;
 };
 
-const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
+const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit }) => {
     const { token, user } = useAuth();
     const { updateTierIfNotNull, tier } = useTier();
 
@@ -24,6 +25,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [query, setQuery] = useState<Query>({
         id: null,
+        projectId: projectId,
         nlQuery: '',
         sqlQuery: ''
     });
@@ -40,6 +42,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
             setHasTranslated(false);
             setQuery({
                 id: null,
+                projectId: projectId,
                 nlQuery: value,
                 sqlQuery: '' // Clear SQL when NL input changes
             });
@@ -89,6 +92,7 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
         onError('');
         setQuery({
             id: null,
+            projectId: projectId,
             nlQuery: '',
             sqlQuery: '',
         });
@@ -98,7 +102,10 @@ const QueryComponent: React.FC<Props> = ({ onError, onSubmit }) => {
     };
 
     const handleQuerySelected = (query: Query) => {
-        setQuery(query);
+        setQuery({
+            ...query,
+            projectId: projectId // Ensure projectId is set when selecting from history
+        });
         setMode(query.nlQuery ? 0 : 1);
         
         // If the query has both NL and SQL content, treat it as already translated
