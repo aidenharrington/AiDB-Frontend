@@ -22,7 +22,7 @@ import { useTier } from '../context/TierProvider';
 import { authGuard } from '../util/AuthGuard';
 import { Project } from '../types/Project';
 import { ProjectCreateRequest } from '../types/dtos/ProjectCreateRequest';
-import Navbar from '../components/Navbar';
+import MainLayout from '../components/Layout/MainLayout';
 import { formatLimitDisplay, isLimitReached } from '../util/LimitDisplayUtil';
 
 export default function ProjectsPage() {
@@ -118,10 +118,8 @@ export default function ProjectsPage() {
     }
 
     return (
-        <Box>
-            <Navbar />
-            
-            <Box sx={{ p: 4 }}>
+        <MainLayout>
+            <Box>
                 {error && (
                     <Box sx={{ mb: 2, p: 2, bgcolor: 'error.light', color: 'error.contrastText', borderRadius: 1 }}>
                         <Typography variant="body2">
@@ -227,7 +225,7 @@ export default function ProjectsPage() {
 
                 <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
                     <DialogTitle>Create New Project</DialogTitle>
-                    <DialogContent>
+                    <DialogContent sx={{ pt: 2 }}>
                         <TextField
                             autoFocus
                             fullWidth
@@ -251,6 +249,6 @@ export default function ProjectsPage() {
                     </DialogActions>
                 </Dialog>
             </Box>
-        </Box>
+        </MainLayout>
     );
 }

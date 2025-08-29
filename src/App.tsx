@@ -4,9 +4,13 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
 import AuthPage from './pages/AuthPage';
+import WhyAiDBPage from './pages/WhyAiDBPage';
+import HowToUsePage from './pages/HowToUsePage';
+import RoadmapPage from './pages/RoadmapPage';
+import AboutPage from './pages/AboutPage';
 import { AuthProvider, useAuth } from './context/AuthProvider';
 import { TierProvider } from './context/TierProvider';
-import { Box, CircularProgress } from '@mui/material';
+import { ThemeProvider, Box, CircularProgress } from './theme';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -63,19 +67,53 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/why-aidb" 
+        element={
+          <ProtectedRoute>
+            <WhyAiDBPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/how-to-use" 
+        element={
+          <ProtectedRoute>
+            <HowToUsePage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/roadmap" 
+        element={
+          <ProtectedRoute>
+            <RoadmapPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/about" 
+        element={
+          <ProtectedRoute>
+            <AboutPage />
+          </ProtectedRoute>
+        } 
+      />
     </Routes>
   );
 };
 
 const App: React.FC = () => {
   return (
-    <TierProvider>
-      <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
-      </AuthProvider>
-    </TierProvider>
+    <ThemeProvider>
+      <TierProvider>
+        <AuthProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </AuthProvider>
+      </TierProvider>
+    </ThemeProvider>
   );
 };
 

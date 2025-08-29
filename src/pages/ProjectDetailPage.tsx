@@ -1,6 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, useTheme } from '@mui/material';
-import { CloudUpload as UploadIcon } from '@mui/icons-material';
+import { 
+  Button, 
+  Typography, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  Box, 
+  useTheme,
+  Tabs,
+  Tab,
+  Drawer,
+  IconButton,
+  TextField,
+  InputAdornment,
+  Collapse,
+  Divider,
+  Chip,
+  Stack
+} from '@mui/material';
+import { 
+  CloudUpload as UploadIcon,
+  History as HistoryIcon,
+  Search as SearchIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
 import { useParams } from 'react-router-dom';
 import { getProject, uploadExcel } from '../service/ProjectService';
 import { Project } from '../types/Project';
@@ -13,8 +42,33 @@ import { useTier } from '../context/TierProvider';
 import { authGuard } from '../util/AuthGuard';
 import { Query } from '../types/Query';
 import { motion } from 'framer-motion';
-import Navbar from '../components/Navbar';
-import { isLimitReached } from '../util/LimitDisplayUtil';
+import MainLayout from '../components/Layout/MainLayout';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 0 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
 
 const ProjectDetailPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -22,12 +76,46 @@ const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const theme = useTheme();
 
+  // Add global styles for table scroll bars
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .table-container::-webkit-scrollbar {
+        height: 0px;
+      }
+      .table-container:hover::-webkit-scrollbar {
+        height: 8px !important;
+      }
+      .table-container:hover::-webkit-scrollbar-track {
+        background: #f5f5f5 !important;
+        border-radius: 4px !important;
+      }
+      .table-container:hover::-webkit-scrollbar-thumb {
+        background: #c1c1c1 !important;
+        border-radius: 4px !important;
+      }
+      .table-container:hover::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+  }, []);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [userQueryData, setUserQueryData] = useState<UserQueryData | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedQueryFromHistory, setSelectedQueryFromHistory] = useState<Query | null>(null);
 
   const hasTables = project?.tables && project.tables.length > 0;
 
@@ -58,7 +146,6 @@ const ProjectDetailPage: React.FC = () => {
         fetchProject();
     }
 }, [user, token, updateTierIfNotNull]);
-
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -115,8 +202,6 @@ const ProjectDetailPage: React.FC = () => {
     }
   };
 
-  
-
   const handleSqlSubmit = async (query: Query) => {
     setLoading(true);
     setErrorMessage('');
@@ -125,6 +210,8 @@ const ProjectDetailPage: React.FC = () => {
       const result = await authGuard(user, token, executeSql, query);
       setUserQueryData(result.data);
       updateTierIfNotNull(result.tier);
+      // Auto-switch to query results tab
+      setActiveTab(1);
     } catch (error: unknown) {
       setLoading(false);
 
@@ -136,186 +223,491 @@ const ProjectDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const handleQuerySelected = (query: Query) => {
+    // Close the history drawer when a query is selected
+    setHistoryDrawerOpen(false);
+    
+    // Pass the selected query to the main component
+    setSelectedQueryFromHistory(query);
+    
+    // Clear the selected query after a short delay to prevent re-processing
+    setTimeout(() => {
+      setSelectedQueryFromHistory(null);
+    }, 100);
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const filteredTables = project?.tables?.filter(table => 
+    table.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    table.fileName.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
   return (
-    <Box>
-      <Navbar />
-      <Box sx={{ p: 4 }}>
-        {/* Tables Section - Always present to maintain layout */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-            Tables
-          </Typography>
-          
-          {hasTables ? (
-            <Box
-              sx={{
-                display: 'flex',
-                overflowX: 'auto',
-                gap: 4,
-                scrollSnapType: 'x mandatory',
-                px: 2,
-                minHeight: 400, // Maintain consistent height
+    <MainLayout>
+      <Box sx={{ 
+        height: 'calc(100vh - 64px - 48px)', // Full height minus navbar and padding
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
+        {/* Header with Tabs and Search */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          mb: 2,
+          minHeight: 64
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', mr: 3 }}>
+              {project?.name || 'Project'}
+            </Typography>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange}
+              sx={{ 
+                '& .MuiTab-root': { 
+                  minHeight: 40,
+                  textTransform: 'none',
+                  fontWeight: 500
+                }
               }}
             >
-              {project.tables?.map((table, index) => (
-                <motion.div
-                  key={index}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  style={{
-                    scrollSnapAlign: 'center',
-                    flex: '0 0 auto',
-                    width: 600, // Larger than projects page
-                    minHeight: 400,
-                  }}
-                >
-                  <Paper
-                    elevation={6}
+              <Tab label="Data Tables" />
+              <Tab label="Query Results" />
+            </Tabs>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Search tables..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ width: 250 }}
+            />
+            <IconButton
+              onClick={() => setHistoryDrawerOpen(!historyDrawerOpen)}
+              sx={{ 
+                bgcolor: historyDrawerOpen ? 'primary.main' : 'transparent',
+                color: historyDrawerOpen ? 'white' : 'inherit',
+                '&:hover': {
+                  bgcolor: historyDrawerOpen ? 'primary.dark' : 'action.hover'
+                }
+              }}
+            >
+              <HistoryIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Main Content Area */}
+        <Box sx={{ 
+          flex: 1, 
+          display: 'flex', 
+          gap: 2,
+          overflow: 'hidden'
+        }}>
+          {/* Main Content */}
+          <Box sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
+            {/* Tab Panels */}
+            <TabPanel value={activeTab} index={0}>
+              <Box sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                {hasTables ? (
+                  <Box
                     sx={{
-                      height: '100%',
-                      borderRadius: 4,
-                      background: theme.palette.background.paper,
-                      overflow: 'hidden',
+                      display: 'flex',
+                      overflowX: 'auto',
+                      gap: 3,
+                      scrollSnapType: 'x mandatory',
+                      px: 1,
+                      flex: 1,
+                      pb: 2
                     }}
                   >
-                    <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                      <Typography variant="h6" fontWeight="bold">
-                        {table.displayName}
+                    {filteredTables.map((table, index) => (
+                      <motion.div
+                        key={index}
+                        whileHover={{ scale: 1.01 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        style={{
+                          scrollSnapAlign: 'start',
+                          flex: '0 0 auto',
+                          width: 500,
+                          height: '100%',
+                        }}
+                      >
+                        <Paper
+                          elevation={2}
+                          sx={{
+                            height: '100%',
+                            borderRadius: 2,
+                            background: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                            display: 'flex',
+                            flexDirection: 'column'
+                          }}
+                        >
+                          <Box sx={{ 
+                            p: 2, 
+                            borderBottom: `1px solid ${theme.palette.divider}`,
+                            backgroundColor: theme.palette.grey[50],
+                            flexShrink: 0
+                          }}>
+                            <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
+                              {table.displayName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {table.fileName} • {table.rows?.length || 0} rows
+                            </Typography>
+                          </Box>
+                          <TableContainer 
+                            className="table-container"
+                            sx={{ 
+                              flex: 1,
+                              overflowX: 'auto',
+                              '& .MuiTable-root': {
+                                borderCollapse: 'separate',
+                                borderSpacing: 0,
+                                minWidth: '100%'
+                              }
+                            }}
+                          >
+                            <Table stickyHeader size="small" sx={{ minWidth: Math.max(500, (table.columns?.length || 0) * 120) }}>
+                              <TableHead>
+                                <TableRow>
+                                  {table.columns?.map((col, i) => (
+                                    <TableCell 
+                                      key={i} 
+                                      sx={{ 
+                                        fontWeight: 600,
+                                        backgroundColor: theme.palette.grey[100],
+                                        borderBottom: `2px solid ${theme.palette.divider}`,
+                                        fontSize: '0.875rem',
+                                        py: 1.5,
+                                        px: 2,
+                                        minWidth: 120,
+                                        maxWidth: 250,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                    >
+                                      {col.name}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {(() => {
+                                  const maxRows = 20; // Fixed number of rows to display
+                                  const actualRows = table.rows || [];
+                                  const displayRows = actualRows.slice(0, maxRows);
+                                  const emptyRows = Math.max(0, maxRows - actualRows.length);
+                                  
+                                  return (
+                                    <>
+                                      {displayRows.map((row, rowIndex) => (
+                                        <TableRow 
+                                          key={rowIndex}
+                                          sx={{
+                                            '&:nth-of-type(odd)': {
+                                              backgroundColor: theme.palette.action.hover,
+                                            },
+                                            '&:hover': {
+                                              backgroundColor: theme.palette.action.selected,
+                                            }
+                                          }}
+                                        >
+                                          {row.map((cell, cellIndex) => (
+                                            <TableCell 
+                                              key={cellIndex}
+                                              sx={{ 
+                                                fontSize: '0.875rem',
+                                                py: 1,
+                                                px: 2,
+                                                borderBottom: `1px solid ${theme.palette.divider}`,
+                                                minWidth: 120,
+                                                maxWidth: 250,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                              }}
+                                            >
+                                              {cell !== null && cell !== undefined ? String(cell) : ''}
+                                            </TableCell>
+                                          ))}
+                                        </TableRow>
+                                      ))}
+                                      {emptyRows > 0 && Array.from({ length: emptyRows }).map((_, index) => (
+                                        <TableRow 
+                                          key={`empty-${index}`}
+                                          sx={{
+                                            '&:nth-of-type(odd)': {
+                                              backgroundColor: theme.palette.action.hover,
+                                            }
+                                          }}
+                                        >
+                                          {table.columns?.map((col, cellIndex) => (
+                                            <TableCell 
+                                              key={cellIndex}
+                                              sx={{ 
+                                                fontSize: '0.875rem',
+                                                py: 1,
+                                                px: 2,
+                                                borderBottom: `1px solid ${theme.palette.divider}`,
+                                                minWidth: 120,
+                                                maxWidth: 250,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                              }}
+                                            >
+                                              &nbsp;
+                                            </TableCell>
+                                          ))}
+                                        </TableRow>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </Paper>
+                      </motion.div>
+                    ))}
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      border: `2px dashed ${theme.palette.divider}`,
+                      borderRadius: 2,
+                      backgroundColor: theme.palette.background.default,
+                    }}
+                  >
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                        No tables available
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        File: {table.fileName}
+                        Upload an Excel file to view tables
                       </Typography>
                     </Box>
-                    <TableContainer sx={{ maxHeight: 350, overflow: 'auto' }}>
-                      <Table stickyHeader>
-                        <TableHead>
-                          <TableRow>
-                            {table.columns?.map((col, i) => (
-                              <TableCell key={i} sx={{ fontWeight: 'bold', backgroundColor: theme.palette.grey[100] }}>
-                                {col.name}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {table.rows && table.rows.length > 0 ? (
-                            table.rows.map((row, rowIndex) => (
-                              <TableRow key={rowIndex}>
-                                {row.map((cell, cellIndex) => (
-                                  <TableCell key={cellIndex}>
-                                    {cell !== null && cell !== undefined ? String(cell) : ''}
-                                  </TableCell>
-                                ))}
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={table.columns.length} align="center" sx={{ py: 4 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  No data available
-                                </Typography>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Paper>
-                </motion.div>
-              ))}
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 400,
-                border: `2px dashed ${theme.palette.divider}`,
-                borderRadius: 4,
-                backgroundColor: theme.palette.background.default,
-              }}
-            >
-              <Typography variant="h6" color="text.secondary">
-                No tables available. Upload an Excel file to view tables.
-              </Typography>
-            </Box>
-          )}
-        </Box>
+                  </Box>
+                )}
+              </Box>
+            </TabPanel>
 
-
-
-        {/* Query Components */}
-        <Box sx={{ mb: 4 }}>
-          <QueryComponent 
-            projectId={projectId!} 
-            onError={setErrorMessage} 
-            onSubmit={handleSqlSubmit} 
-          />
-        </Box>
-        
-        <Box sx={{ mb: 4 }}>
-          <QueryResultsComponent data={userQueryData} />
-        </Box>
-
-        {/* File Upload Section */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Upload Excel File
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              style={{ display: 'none' }}
-              id="excel-upload"
-              onChange={handleFileChange}
-            />
-            <label htmlFor="excel-upload">
-              <Button variant="outlined" component="span" startIcon={<UploadIcon />}>
-                Choose File
-              </Button>
-            </label>
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleUpload}
-              disabled={!selectedFile || loading}
-            >
-              {loading ? 'Uploading...' : 'Upload'}
-            </Button>
+            <TabPanel value={activeTab} index={1}>
+              <Box sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                {userQueryData ? (
+                  <Box sx={{ 
+                    height: '100%', 
+                    overflow: 'auto',
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 2
+                  }}>
+                    <QueryResultsComponent data={userQueryData} />
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      border: `2px dashed ${theme.palette.divider}`,
+                      borderRadius: 2,
+                      backgroundColor: theme.palette.background.default,
+                    }}
+                  >
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                        No query results
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Execute a query to see results here
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            </TabPanel>
           </Box>
 
-          {selectedFile && (
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              Selected File: {selectedFile.name}
-            </Typography>
-          )}
-
-          {tier && (
-            <Typography variant="body2" color="text.secondary">
-              Maximum file size: {parseInt(tier.maxFileSize) === -1 ? '∞' : `${tier.maxFileSize}MB`} • Accepts .xlsx files only
-            </Typography>
-          )}
+          {/* Query History Drawer */}
+          <Collapse in={historyDrawerOpen} orientation="horizontal">
+            <Box sx={{ 
+              width: 380,
+              height: '100%',
+              borderLeft: `2px solid ${theme.palette.primary.main}`,
+              backgroundColor: theme.palette.primary.light,
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '-4px 0 8px rgba(0,0,0,0.1)'
+            }}>
+              <Box sx={{ 
+                p: 2, 
+                borderBottom: `2px solid ${theme.palette.primary.main}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: theme.palette.primary.main,
+                color: 'white'
+              }}>
+                <Typography variant="h6" fontWeight="bold">
+                  Query History
+                </Typography>
+                <IconButton 
+                  size="small"
+                  onClick={() => setHistoryDrawerOpen(false)}
+                  sx={{ color: 'white' }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+              <Box sx={{ 
+                flex: 1, 
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: theme.palette.background.paper,
+              }}>
+                <QueryComponent 
+                  projectId={projectId!} 
+                  onError={setErrorMessage} 
+                  onSubmit={handleSqlSubmit}
+                  showHistoryOnly={true}
+                  onQuerySelected={handleQuerySelected}
+                />
+              </Box>
+            </Box>
+          </Collapse>
         </Box>
 
+        {/* Query Component and File Upload Section */}
+        <Box sx={{ 
+          mt: 2,
+          display: 'flex',
+          gap: 2,
+          height: 300,
+          overflow: 'hidden'
+        }}>
+          {/* Query Component */}
+          <Box sx={{ flex: 1 }}>
+            <QueryComponent 
+              projectId={projectId!} 
+              onError={setErrorMessage} 
+              onSubmit={handleSqlSubmit}
+              showHistoryOnly={false}
+              selectedQueryFromHistory={selectedQueryFromHistory}
+            />
+          </Box>
+
+          {/* File Upload Section */}
+          <Box sx={{ 
+            width: 300,
+            p: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 2,
+            backgroundColor: theme.palette.background.paper,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Upload Excel File
+            </Typography>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                style={{ display: 'none' }}
+                id="excel-upload"
+                onChange={handleFileChange}
+              />
+              <label htmlFor="excel-upload">
+                <Button variant="outlined" component="span" startIcon={<UploadIcon />} fullWidth>
+                  Choose File
+                </Button>
+              </label>
+
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleUpload}
+                disabled={!selectedFile || loading}
+                fullWidth
+              >
+                {loading ? 'Uploading...' : 'Upload'}
+              </Button>
+            </Box>
+
+            {selectedFile && (
+              <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-all' }}>
+                Selected: {selectedFile.name}
+              </Typography>
+            )}
+
+            {tier && (
+              <Typography variant="caption" color="text.secondary">
+                Max size: {parseInt(tier.maxFileSize) === -1 ? '∞' : `${tier.maxFileSize}MB`}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+
+        {/* Error and Success Messages */}
         {errorMessage && (
-          <Typography variant="body1" sx={{ color: 'error.main', mb: 2 }}>
-            {errorMessage}
-          </Typography>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" sx={{ color: 'error.main', p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
+              {errorMessage}
+            </Typography>
+          </Box>
         )}
         
         {successMessage && (
-          <Typography variant="body1" sx={{ color: 'success.main', mb: 2 }}>
-            {successMessage}
-          </Typography>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" sx={{ color: 'success.main', p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
+              {successMessage}
+            </Typography>
+          </Box>
         )}
       </Box>
-    </Box>
+    </MainLayout>
   );
 };
 
