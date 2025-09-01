@@ -7,6 +7,9 @@ import {
     TableHead,
     TableRow,
     Paper,
+    Typography,
+    Box,
+    useTheme
 } from '@mui/material';
 import { UserQueryData } from '../types/UserQueryData';
 import { FirestoreTimestampUtil } from '../util/FirestoreTimestampUtil';
@@ -16,6 +19,8 @@ interface Props {
 }
 
 const QueryResultsComponent: React.FC<Props> = ({ data }) => {
+    const theme = useTheme();
+
     if (!data || data.length === 0) {
         return null;
     }
@@ -65,21 +70,75 @@ const QueryResultsComponent: React.FC<Props> = ({ data }) => {
     };
 
     return (
-        <div style={{ padding: '2rem' }}>
-            <TableContainer component={Paper}>
-                <Table>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ 
+                p: 2, 
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                backgroundColor: theme.palette.grey[50]
+            }}>
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
+                    Query Results
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                    {data.length} row{data.length !== 1 ? 's' : ''} returned
+                </Typography>
+            </Box>
+            
+            <TableContainer sx={{ 
+                flex: 1,
+                overflow: 'auto',
+                '& .MuiTable-root': {
+                    borderCollapse: 'separate',
+                    borderSpacing: 0
+                }
+            }}>
+                <Table stickyHeader size="small">
                     <TableHead>
                         <TableRow>
                             {headers.map((header, i) => (
-                                <TableCell key={i}><b>{header}</b></TableCell>
+                                <TableCell 
+                                    key={i}
+                                    sx={{ 
+                                        fontWeight: 600,
+                                        backgroundColor: theme.palette.grey[100],
+                                        borderBottom: `2px solid ${theme.palette.divider}`,
+                                        fontSize: '0.875rem',
+                                        py: 1.5,
+                                        px: 2
+                                    }}
+                                >
+                                    {header}
+                                </TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {data.map((row, rowIdx) => (
-                            <TableRow key={rowIdx}>
+                            <TableRow 
+                                key={rowIdx}
+                                sx={{
+                                    '&:nth-of-type(odd)': {
+                                        backgroundColor: theme.palette.action.hover,
+                                    },
+                                    '&:hover': {
+                                        backgroundColor: theme.palette.action.selected,
+                                    }
+                                }}
+                            >
                                 {headers.map((header, cellIdx) => (
-                                    <TableCell key={cellIdx}>
+                                    <TableCell 
+                                        key={cellIdx}
+                                        sx={{ 
+                                            fontSize: '0.875rem',
+                                            py: 1,
+                                            px: 2,
+                                            borderBottom: `1px solid ${theme.palette.divider}`,
+                                            maxWidth: 200,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
                                         {formatCellValue(row[header])}
                                     </TableCell>
                                 ))}
@@ -88,7 +147,7 @@ const QueryResultsComponent: React.FC<Props> = ({ data }) => {
                     </TableBody>
                 </Table>
             </TableContainer>
-        </div>
+        </Box>
     );
 };
 

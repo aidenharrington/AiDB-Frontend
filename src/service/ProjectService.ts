@@ -38,8 +38,41 @@ export const getProject = async (token: string, projectId: string): Promise<{ pr
       }
     });
 
+    // Filter out id columns and row ids from the data
+    const project = response.data.data;
+    if (project.tables) {
+      project.tables = project.tables.map(table => {
+        if (table.columns && table.rows) {
+          // Find the index of the id column
+          const idColumnIndex = table.columns.findIndex(col => col.name.toLowerCase() === 'id');
+          
+          // Filter out the id column from columns
+          const filteredColumns = table.columns.filter(col => col.name.toLowerCase() !== 'id');
+          
+          // Filter out the first element (row id) and id column from each row
+          const filteredRows = table.rows.map(row => {
+            let filteredRow = [...row];
+            // Remove the first element (row id)
+            filteredRow = filteredRow.slice(1);
+            // Remove the id column if it exists
+            if (idColumnIndex !== -1) {
+              filteredRow.splice(idColumnIndex, 1);
+            }
+            return filteredRow;
+          });
+          
+          return {
+            ...table,
+            columns: filteredColumns,
+            rows: filteredRows
+          };
+        }
+        return table;
+      });
+    }
+
     return {
-      project: response.data.data,
+      project: project,
       tier: response.data.meta.tier
     };
   } catch (error: any) {
@@ -84,8 +117,41 @@ export const uploadExcel = async (token: string, projectId: string, file: File):
       },
     });
 
+    // Filter out id columns and row ids from the uploaded data
+    const project = response.data.data;
+    if (project.tables) {
+      project.tables = project.tables.map(table => {
+        if (table.columns && table.rows) {
+          // Find the index of the id column
+          const idColumnIndex = table.columns.findIndex(col => col.name.toLowerCase() === 'id');
+          
+          // Filter out the id column from columns
+          const filteredColumns = table.columns.filter(col => col.name.toLowerCase() !== 'id');
+          
+          // Filter out the first element (row id) and id column from each row
+          const filteredRows = table.rows.map(row => {
+            let filteredRow = [...row];
+            // Remove the first element (row id)
+            filteredRow = filteredRow.slice(1);
+            // Remove the id column if it exists
+            if (idColumnIndex !== -1) {
+              filteredRow.splice(idColumnIndex, 1);
+            }
+            return filteredRow;
+          });
+          
+          return {
+            ...table,
+            columns: filteredColumns,
+            rows: filteredRows
+          };
+        }
+        return table;
+      });
+    }
+
     return {
-      project: response.data.data,
+      project: project,
       tier: response.data.meta.tier
     };
   } catch (error: any) {
