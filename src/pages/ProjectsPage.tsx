@@ -12,11 +12,13 @@ import {
     DialogActions,
     Button,
     useTheme,
+    IconButton,
+    CardActions,
 } from '@mui/material';
-import { Add } from '@mui/icons-material';
+import { Add, Delete as DeleteIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { getProjects, createProject } from '../service/ProjectService';
+import { getProjects, createProject, deleteProject } from '../service/ProjectService';
 import { useAuth } from '../context/AuthProvider';
 import { useTier } from '../context/TierProvider';
 import { authGuard } from '../util/AuthGuard';
@@ -24,6 +26,7 @@ import { Project } from '../types/Project';
 import { ProjectCreateRequest } from '../types/dtos/ProjectCreateRequest';
 import MainLayout from '../components/Layout/MainLayout';
 import { formatLimitDisplay, isLimitReached } from '../util/LimitDisplayUtil';
+import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog';
 
 export default function ProjectsPage() {
     const { token, user } = useAuth();
@@ -41,6 +44,9 @@ export default function ProjectsPage() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
     const [creating, setCreating] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     // Fetch tier info if needed when page loads
     useEffect(() => {
@@ -107,6 +113,36 @@ export default function ProjectsPage() {
         } finally {
             setCreating(false);
         }
+    };
+
+    const handleDeleteClick = (project: Project, event: React.MouseEvent) => {
+        event.stopPropagation();
+        setProjectToDelete(project);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!projectToDelete) return;
+        
+        setDeleting(true);
+        try {
+            const result = await authGuard(user, token, deleteProject, projectToDelete.id);
+            setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+            setFilteredProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+            updateTierIfNotNull(result.tier);
+            setDeleteDialogOpen(false);
+            setProjectToDelete(null);
+        } catch (error) {
+            console.error('Failed to delete project:', error);
+            setError(error instanceof Error ? error.message : 'Failed to delete project');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteDialogOpen(false);
+        setProjectToDelete(null);
     };
 
     if (loading) {
@@ -191,7 +227,6 @@ export default function ProjectsPage() {
                                 width: 300,
                                 cursor: 'pointer',
                             }}
-                            onClick={() => navigate(`/projects/${project.id}`)}
                         >
                             <Card
                                 elevation={6}
@@ -200,16 +235,45 @@ export default function ProjectsPage() {
                                     borderRadius: 4,
                                     background: theme.palette.background.paper,
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    textAlign: 'center',
+                                    flexDirection: 'column',
+                                    position: 'relative',
                                 }}
                             >
-                                <CardContent>
+                                <CardContent 
+                                    sx={{ 
+                                        flex: 1, 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        pt: 3
+                                    }}
+                                    onClick={() => navigate(`/projects/${project.id}`)}
+                                >
                                     <Typography variant="h6" fontWeight="bold">
                                         {project.name}
                                     </Typography>
                                 </CardContent>
+                                <CardActions sx={{ 
+                                    justifyContent: 'center', 
+                                    pb: 2,
+                                    pt: 0
+                                }}>
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={(e) => handleDeleteClick(project, e)}
+                                        sx={{
+                                            '&:hover': {
+                                                backgroundColor: 'error.light',
+                                                color: 'error.contrastText'
+                                            }
+                                        }}
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </CardActions>
                             </Card>
                         </motion.div>
                     ))}
@@ -248,6 +312,16 @@ export default function ProjectsPage() {
                         </Button>
                     </DialogActions>
                 </Dialog>
+
+                <DeleteConfirmationDialog
+                    open={deleteDialogOpen}
+                    onClose={handleDeleteCancel}
+                    onConfirm={handleDeleteConfirm}
+                    title="Delete Project"
+                    message="This will permanently delete the project and all its associated tables and data."
+                    itemName={projectToDelete?.name || ''}
+                    loading={deleting}
+                />
             </Box>
         </MainLayout>
     );

@@ -385,15 +385,17 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                                 sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%' } }}
                             />
                         </Box>
-                        <Button 
-                            variant="contained" 
-                            color="success" 
-                            size="small"
-                            onClick={handleSubmit} 
-                            disabled={loading || (tier ? isLimitReached(tier.queryLimitUsage, tier.queryLimit) : false)}
-                        >
-                            Execute
-                        </Button>
+                        <Box display="flex" gap={1} sx={{ mt: 1 }}>
+                            <Button 
+                                variant="contained" 
+                                color="success" 
+                                size="small"
+                                onClick={handleSubmit} 
+                                disabled={loading || (tier ? isLimitReached(tier.queryLimitUsage, tier.queryLimit) : false)}
+                            >
+                                Execute
+                            </Button>
+                        </Box>
                     </Box>
                 )}
             </Box>
