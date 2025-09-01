@@ -13,26 +13,21 @@ import {
   useTheme,
   Tabs,
   Tab,
-  Drawer,
+  Collapse,
   IconButton,
   TextField,
-  InputAdornment,
-  Collapse,
-  Divider,
-  Chip,
-  Stack
+  InputAdornment
 } from '@mui/material';
 import { 
   CloudUpload as UploadIcon,
   History as HistoryIcon,
   Search as SearchIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useParams } from 'react-router-dom';
-import { getProject, uploadExcel } from '../service/ProjectService';
-import { Project } from '../types/Project';
+import { getProject, uploadExcel, deleteTable } from '../service/ProjectService';
+import { Project, Table as ProjectTable } from '../types/Project';
 import QueryComponent from "../components/QueryComponent";
 import QueryResultsComponent from '../components/QueryResultsComponent';
 import { executeSql } from '../service/QueryService';
@@ -43,6 +38,7 @@ import { authGuard } from '../util/AuthGuard';
 import { Query } from '../types/Query';
 import { motion } from 'framer-motion';
 import MainLayout from '../components/Layout/MainLayout';
+import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -116,6 +112,9 @@ const ProjectDetailPage: React.FC = () => {
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQueryFromHistory, setSelectedQueryFromHistory] = useState<Query | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tableToDelete, setTableToDelete] = useState<ProjectTable | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const hasTables = project?.tables && project.tables.length > 0;
 
@@ -242,6 +241,45 @@ const ProjectDetailPage: React.FC = () => {
     setActiveTab(newValue);
   };
 
+  const handleDeleteTableClick = (table: ProjectTable, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setTableToDelete(table);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteTableConfirm = async () => {
+    if (!tableToDelete || !project) return;
+    
+    setDeleting(true);
+    try {
+      const result = await authGuard(user, token, deleteTable, projectId!, tableToDelete.id);
+      
+      // Remove the table from local state
+      setProject(prevProject => {
+        if (!prevProject) return null;
+        return {
+          ...prevProject,
+          tables: prevProject.tables.filter(table => table.id !== tableToDelete.id)
+        };
+      });
+      
+      updateTierIfNotNull(result.tier);
+      setDeleteDialogOpen(false);
+      setTableToDelete(null);
+      setSuccessMessage(`Table "${tableToDelete.displayName}" deleted successfully!`);
+    } catch (error) {
+      console.error('Failed to delete table:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to delete table');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteTableCancel = () => {
+    setDeleteDialogOpen(false);
+    setTableToDelete(null);
+  };
+
   const filteredTables = project?.tables?.filter(table => 
     table.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     table.fileName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -358,6 +396,7 @@ const ProjectDetailPage: React.FC = () => {
                           width: 500,
                           height: '100%',
                         }}
+                        
                       >
                         <Paper
                           elevation={2}
@@ -374,14 +413,32 @@ const ProjectDetailPage: React.FC = () => {
                             p: 2, 
                             borderBottom: `1px solid ${theme.palette.divider}`,
                             backgroundColor: theme.palette.grey[50],
-                            flexShrink: 0
+                            flexShrink: 0,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
                           }}>
-                            <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                              {table.displayName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {table.fileName} • {table.rows?.length || 0} rows
-                            </Typography>
+                            <Box>
+                              <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
+                                {table.displayName}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {table.fileName} • {table.rows?.length || 0} rows
+                              </Typography>
+                            </Box>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={(e) => handleDeleteTableClick(table, e)}
+                              sx={{
+                                '&:hover': {
+                                  backgroundColor: 'error.light',
+                                  color: 'error.contrastText'
+                                }
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
                           </Box>
                           <TableContainer 
                             className="table-container"
@@ -706,6 +763,17 @@ const ProjectDetailPage: React.FC = () => {
             </Typography>
           </Box>
         )}
+
+        {/* Delete Table Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteTableCancel}
+          onConfirm={handleDeleteTableConfirm}
+          title="Delete Table"
+          message="This will permanently delete the table and all its data. This action cannot be undone."
+          itemName={tableToDelete?.displayName || ''}
+          loading={deleting}
+        />
       </Box>
     </MainLayout>
   );

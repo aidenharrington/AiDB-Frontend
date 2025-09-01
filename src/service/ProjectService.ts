@@ -164,3 +164,41 @@ export const uploadExcel = async (token: string, projectId: string, file: File):
 
 
 };
+
+export const deleteProject = async (token: string, projectId: string): Promise<{ tier: Tier | null }> => {
+  try {
+    const response = await axios.delete<APIResponse<string>>(projectUrl(projectId), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
+
+    return {
+      tier: response.data.meta.tier
+    };
+  } catch (error: any) {
+    handleHttpError(error?.response?.status, error);
+    // This line will never be reached due to handleHttpError throwing, but TypeScript needs it
+    throw error;
+  }
+};
+
+export const deleteTable = async (token: string, projectId: string, tableId: string): Promise<{ tier: Tier | null }> => {
+  const deleteTableUrl = `${projectUrl(projectId)}/tables/${tableId}`;
+  
+  try {
+    const response = await axios.delete<APIResponse<string>>(deleteTableUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
+
+    return {
+      tier: response.data.meta.tier
+    };
+  } catch (error: any) {
+    handleHttpError(error?.response?.status, error);
+    // This line will never be reached due to handleHttpError throwing, but TypeScript needs it
+    throw error;
+  }
+};
