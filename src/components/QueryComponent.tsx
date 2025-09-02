@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthProvider';
 import { useTier } from '../context/TierProvider';
 import { authGuard } from "../util/AuthGuard";
 import { FirestoreTimestampUtil } from "../util/FirestoreTimestampUtil";
-import { formatLimitDisplay, isLimitReached } from '../util/LimitDisplayUtil';
+import { formatLimitDisplay, isLimitReached, isDataLimitReached } from '../util/LimitDisplayUtil';
 import QueryHistory from './QueryHistory';
 
 type Props = {
@@ -223,6 +223,16 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                 }
             }
             
+            // Check data limit
+            if (tier) {
+                if (isDataLimitReached(tier.dataRowLimitUsage, tier.dataRowLimit)) {
+                    const limit = parseInt(tier.dataRowLimit);
+                    const limitText = limit === -1 ? '∞' : limit.toString();
+                    onError(`You have reached your data row limit of ${limitText} for your ${tier.name} tier.`);
+                    return;
+                }
+            }
+            
             setLoading(true);
             onError('');
             onSubmit(finalQuery);
@@ -251,9 +261,12 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {tier && (
-                        <Typography variant="caption" color="primary.main" fontWeight="medium">
-                            {tier.name}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="caption" color="text.secondary">Tier:</Typography>
+                            <Typography variant="caption" color="primary.main" fontWeight="medium">
+                                {tier.name}
+                            </Typography>
+                        </Box>
                     )}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="caption" color="text.secondary">Queries:</Typography>
@@ -273,6 +286,17 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                             color={tier && isLimitReached(tier.translationLimitUsage, tier.translationLimit) ? 'error.main' : 'text.primary'}
                         >
                             {tier ? formatLimitDisplay(tier.translationLimitUsage, tier.translationLimit) : '...'}
+                        </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="caption" color="text.secondary">Data Used:</Typography>
+                        <Typography 
+                            variant="caption" 
+                            fontWeight="bold"
+                            color={tier && isDataLimitReached(tier.dataRowLimitUsage, tier.dataRowLimit) ? 'error.main' : 'text.primary'}
+                        >
+                            {tier && parseInt(tier.dataRowLimit) === -1 ? '∞' : 
+                             tier ? `${Math.round((parseInt(tier.dataRowLimitUsage) / parseInt(tier.dataRowLimit)) * 100)}%` : '...'}
                         </Typography>
                     </Box>
                 </Box>
@@ -337,7 +361,7 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                                 size="small"
                                 onClick={handleTranslate} 
                                 disabled={loading || 
-                                    (tier ? isLimitReached(tier.translationLimitUsage, tier.translationLimit) : false) ||
+                                    (tier ? (isLimitReached(tier.translationLimitUsage, tier.translationLimit) || isDataLimitReached(tier.dataRowLimitUsage, tier.dataRowLimit)) : false) ||
                                     hasTranslated ||
                                     !query.nlQuery.trim()
                                 }
@@ -363,7 +387,7 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                                 color="success" 
                                 size="small"
                                 onClick={handleSubmit} 
-                                disabled={loading || (tier ? isLimitReached(tier.queryLimitUsage, tier.queryLimit) : false)}
+                                disabled={loading || (tier ? (isLimitReached(tier.queryLimitUsage, tier.queryLimit) || isDataLimitReached(tier.dataRowLimitUsage, tier.dataRowLimit)) : false)}
                             >
                                 Execute
                             </Button>
@@ -391,7 +415,7 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                                 color="success" 
                                 size="small"
                                 onClick={handleSubmit} 
-                                disabled={loading || (tier ? isLimitReached(tier.queryLimitUsage, tier.queryLimit) : false)}
+                                disabled={loading || (tier ? (isLimitReached(tier.queryLimitUsage, tier.queryLimit) || isDataLimitReached(tier.dataRowLimitUsage, tier.dataRowLimit)) : false)}
                             >
                                 Execute
                             </Button>

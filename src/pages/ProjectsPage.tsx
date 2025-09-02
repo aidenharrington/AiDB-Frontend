@@ -14,6 +14,7 @@ import {
     useTheme,
     IconButton,
     CardActions,
+    Alert,
 } from '@mui/material';
 import { Add, Delete as DeleteIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -47,6 +48,7 @@ export default function ProjectsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     // Fetch tier info if needed when page loads
     useEffect(() => {
@@ -87,8 +89,40 @@ export default function ProjectsPage() {
         }
     }, [searchTerm, projects]);
 
+    const validateProjectName = (name: string): string | null => {
+        if (!name.trim()) {
+            return 'Project name is required.';
+        }
+        
+        if (name.trim().length < 3) {
+            return 'Project name must be at least 3 characters long.';
+        }
+        
+        if (name.trim().length > 50) {
+            return 'Project name must be less than 50 characters long.';
+        }
+        
+        // Check if project name already exists (case-insensitive)
+        const existingProject = projects.find(
+            project => project.name.toLowerCase() === name.toLowerCase()
+        );
+        
+        if (existingProject) {
+            return 'A project with this name already exists.';
+        }
+        
+        return null;
+    };
+
     const handleCreateProject = async () => {
         if (!newProjectName.trim()) return;
+        
+        // Validate project name
+        const nameValidationError = validateProjectName(newProjectName);
+        if (nameValidationError) {
+            setValidationError(nameValidationError);
+            return;
+        }
         
         // Check project limit
         if (tier) {
@@ -106,6 +140,7 @@ export default function ProjectsPage() {
             const result = await authGuard(user, token, createProject, projectCreateRequest);
             setDialogOpen(false);
             setNewProjectName('');
+            setValidationError(null);
             updateTierIfNotNull(result.tier);
             navigate(`/projects/${result.project.id}`);
         } catch (error) {
@@ -143,6 +178,22 @@ export default function ProjectsPage() {
     const handleDeleteCancel = () => {
         setDeleteDialogOpen(false);
         setProjectToDelete(null);
+    };
+
+    const handleDialogClose = () => {
+        setDialogOpen(false);
+        setNewProjectName('');
+        setValidationError(null);
+    };
+
+    const handleProjectNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setNewProjectName(value);
+        
+        // Clear validation error when user starts typing
+        if (validationError) {
+            setValidationError(null);
+        }
     };
 
     if (loading) {
@@ -193,7 +244,10 @@ export default function ProjectsPage() {
                             width: 300,
                             cursor: 'pointer',
                         }}
-                        onClick={() => setDialogOpen(true)}
+                        onClick={() => {
+                            setDialogOpen(true);
+                            setValidationError(null);
+                        }}
                     >
                         <Card
                             elevation={6}
@@ -287,26 +341,33 @@ export default function ProjectsPage() {
                     </Box>
                 )}
 
-                <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
+                <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="xs" fullWidth>
                     <DialogTitle>Create New Project</DialogTitle>
                     <DialogContent sx={{ pt: 2 }}>
+                        {validationError && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                                {validationError}
+                            </Alert>
+                        )}
                         <TextField
                             autoFocus
                             fullWidth
                             label="Project Name"
                             value={newProjectName}
-                            onChange={(e) => setNewProjectName(e.target.value)}
+                            onChange={handleProjectNameChange}
                             disabled={creating}
+                            error={!!validationError}
+                            helperText={validationError ? '' : 'Enter a unique project name'}
                         />
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={() => setDialogOpen(false)} disabled={creating}>
+                        <Button onClick={handleDialogClose} disabled={creating}>
                             Cancel
                         </Button>
                         <Button 
                             onClick={handleCreateProject} 
                             variant="contained" 
-                            disabled={creating || (tier ? isLimitReached(tier.projectLimitUsage, tier.projectLimit) : false)}
+                            disabled={creating || (tier ? isLimitReached(tier.projectLimitUsage, tier.projectLimit) : false) || !!validationError}
                         >
                             {creating ? 'Creating...' : 'Create'}
                         </Button>

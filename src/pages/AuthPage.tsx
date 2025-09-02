@@ -3,6 +3,7 @@ import {
     Container, TextField, Button, Typography, Stack, Box,
 } from '@mui/material';
 import AiDBLogo from '../components/AiDBLogo';
+import MessageDisplay from '../components/MessageDisplay';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword
@@ -316,98 +317,95 @@ const AuthPage: React.FC = () => {
                     </Button>
                 )}
                 
-                {errorMessage && (
-                    <Box sx={{ mt: 1 }}>
-                        <Typography 
-                            variant="body2" 
-                            color="error" 
-                            align="center" 
-                            id="auth-error"
-                            role="alert"
-                            aria-live="polite"
-                        >
-                            {errorMessage}
-                        </Typography>
-                        
-                        {/* Show retry suggestion for retryable errors */}
-                        {errorMessage.includes('try again') && !errorMessage.includes('do not match') && (
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary" 
-                                align="center" 
-                                sx={{ display: 'block', mt: 1 }}
-                            >
-                                You can try again with the same information.
-                            </Typography>
-                        )}
-                        
-                        {/* Show specific help for common errors */}
-                        {errorMessage.includes('Email already in use') && (
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary" 
-                                align="center" 
-                                sx={{ display: 'block', mt: 1 }}
-                            >
-                                Try signing in instead, or use a different email address.
-                            </Typography>
-                        )}
-                        
-                        {errorMessage.includes('Password is too weak') && (
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary" 
-                                align="center" 
-                                sx={{ display: 'block', mt: 1 }}
-                            >
-                                Use at least 6 characters with a mix of letters, numbers, and symbols.
-                            </Typography>
-                        )}
-                        
-                        {errorMessage.includes('Network error') && (
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary" 
-                                align="center" 
-                                sx={{ display: 'block', mt: 1 }}
-                            >
-                                Check your internet connection and try again.
-                            </Typography>
-                        )}
-                        
-                        {errorMessage.includes('Invalid email address') && (
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary" 
-                                align="center" 
-                                sx={{ display: 'block', mt: 1 }}
-                            >
-                                Please enter a valid email address (e.g., user@example.com).
-                            </Typography>
-                        )}
-                        
-                        {errorMessage.includes('Too many failed attempts') && (
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary" 
-                                align="center" 
-                                sx={{ display: 'block', mt: 1 }}
-                            >
-                                Wait a few minutes before trying again, or reset your password.
-                            </Typography>
-                        )}
-                        
-                        {errorMessage.includes('No account found') && (
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary" 
-                                align="center" 
-                                sx={{ display: 'block', mt: 1 }}
-                            >
-                                Check your email address or create a new account.
-                            </Typography>
-                        )}
-                    </Box>
+                <MessageDisplay 
+                    message={errorMessage} 
+                    type="error" 
+                    maxWidth="400px"
+                    sx={{ 
+                        mx: 'auto',
+                        '& .MuiAlert-root': {
+                            textAlign: 'center'
+                        }
+                    }}
+                />
+                
+                {/* Show retry suggestion for retryable errors */}
+                {errorMessage.includes('try again') && !errorMessage.includes('do not match') && (
+                    <Typography 
+                        variant="caption" 
+                        color="text.secondary" 
+                        align="center" 
+                        sx={{ display: 'block', mt: 1 }}
+                    >
+                        You can try again with the same information.
+                    </Typography>
+                )}
+                
+                {/* Show specific help for common errors */}
+                {errorMessage.includes('Email already in use') && (
+                    <Typography 
+                        variant="caption" 
+                        color="text.secondary" 
+                        align="center" 
+                        sx={{ display: 'block', mt: 1 }}
+                    >
+                        Try signing in instead, or use a different email address.
+                    </Typography>
+                )}
+                
+                {errorMessage.includes('Password is too weak') && (
+                    <Typography 
+                        variant="caption" 
+                        color="text.secondary" 
+                        align="center" 
+                        sx={{ display: 'block', mt: 1 }}
+                    >
+                        Use at least 6 characters with a mix of letters, numbers, and symbols.
+                    </Typography>
+                )}
+                
+                {errorMessage.includes('Network error') && (
+                    <Typography 
+                        variant="caption" 
+                        color="text.secondary" 
+                        align="center" 
+                        sx={{ display: 'block', mt: 1 }}
+                    >
+                        Check your internet connection and try again.
+                    </Typography>
+                )}
+                
+                {errorMessage.includes('Invalid email address') && (
+                    <Typography 
+                        variant="caption" 
+                        color="text.secondary" 
+                        align="center" 
+                        sx={{ display: 'block', mt: 1 }}
+                    >
+                        Please enter a valid email address (e.g., user@example.com).
+                    </Typography>
+                )}
+                
+                {errorMessage.includes('Too many failed attempts') && (
+                    <Typography 
+                        variant="caption" 
+                        color="text.secondary" 
+                        align="center" 
+                        sx={{ display: 'block', mt: 1 }}
+                    >
+                        Wait a few minutes before trying again, or reset your password.
+                    </Typography>
+                )}
+                
+                {errorMessage.includes('No account found') && (
+                    <Typography 
+                        variant="caption" 
+                        color="text.secondary" 
+                        align="center" 
+                        sx={{ display: 'block', mt: 1 }}
+                    >
+                        Check your email address or create a new account.
+                    </Typography>
                 )}
 
             </Stack>

@@ -39,6 +39,7 @@ import { Query } from '../types/Query';
 import { motion } from 'framer-motion';
 import MainLayout from '../components/Layout/MainLayout';
 import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog';
+import MessageDisplay from '../components/MessageDisplay';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -188,6 +189,15 @@ const ProjectDetailPage: React.FC = () => {
         setProject(result.project);
       }
       updateTierIfNotNull(result.tier);
+      
+      // Reset the selected file after successful upload
+      setSelectedFile(null);
+      
+      // Reset the file input element
+      const fileInput = document.getElementById('excel-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
     } catch (error: unknown) {
       setLoading(false);
 
@@ -748,21 +758,17 @@ const ProjectDetailPage: React.FC = () => {
         </Box>
 
         {/* Error and Success Messages */}
-        {errorMessage && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" sx={{ color: 'error.main', p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
-              {errorMessage}
-            </Typography>
-          </Box>
-        )}
+        <MessageDisplay 
+          message={errorMessage} 
+          type="error" 
+          maxWidth="600px"
+        />
         
-        {successMessage && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" sx={{ color: 'success.main', p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
-              {successMessage}
-            </Typography>
-          </Box>
-        )}
+        <MessageDisplay 
+          message={successMessage} 
+          type="success" 
+          maxWidth="600px"
+        />
 
         {/* Delete Table Confirmation Dialog */}
         <DeleteConfirmationDialog

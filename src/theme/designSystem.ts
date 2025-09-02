@@ -35,23 +35,23 @@ export const colors = {
   // Semantic Colors - Data Visualization & Status
   success: {
     main: '#059669', // Professional green
-    light: '#10b981',
+    light: '#d1fae5', // Very light green background
     dark: '#047857',
-    contrastText: '#ffffff',
+    contrastText: '#065f46', // Dark green text for light backgrounds
   },
   
   warning: {
     main: '#d97706', // Professional amber
-    light: '#f59e0b',
+    light: '#fef3c7', // Very light amber background
     dark: '#b45309',
-    contrastText: '#ffffff',
+    contrastText: '#92400e', // Dark amber text for light backgrounds
   },
   
   error: {
     main: '#dc2626', // Professional red
-    light: '#ef4444',
+    light: '#fee2e2', // Very light red background
     dark: '#b91c1c',
-    contrastText: '#ffffff',
+    contrastText: '#991b1b', // Dark red text for light backgrounds
   },
   
   info: {

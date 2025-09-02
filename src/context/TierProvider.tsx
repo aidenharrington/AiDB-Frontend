@@ -7,6 +7,7 @@ interface TierContextType {
   setTier: (tier: Tier | null) => void;
   updateTierIfNotNull: (newTier: Tier | null) => void;
   fetchTierIfNeeded: (token: string) => Promise<void>;
+  refreshTier: (token: string) => Promise<void>;
 }
 
 const TierContext = createContext<TierContextType | undefined>(undefined);
@@ -42,8 +43,21 @@ export const TierProvider: React.FC<TierProviderProps> = ({ children }) => {
     }
   }, []); // No dependencies to prevent recreation
 
+  const refreshTier = useCallback(async (token: string) => {
+    // Force refresh tier info regardless of loaded state
+    try {
+      const tierInfo = await getTierInfo(token);
+      if (tierInfo) {
+        setTier(tierInfo);
+        tierLoadedRef.current = true;
+      }
+    } catch (error) {
+      console.error('Failed to refresh tier info:', error);
+    }
+  }, []); // No dependencies to prevent recreation
+
   return (
-    <TierContext.Provider value={{ tier, setTier, updateTierIfNotNull, fetchTierIfNeeded }}>
+    <TierContext.Provider value={{ tier, setTier, updateTierIfNotNull, fetchTierIfNeeded, refreshTier }}>
       {children}
     </TierContext.Provider>
   );
