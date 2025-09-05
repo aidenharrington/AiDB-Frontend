@@ -342,8 +342,8 @@ export default function ProjectsPage() {
                 )}
 
                 <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="xs" fullWidth>
-                    <DialogTitle>Create New Project</DialogTitle>
-                    <DialogContent sx={{ pt: 2 }}>
+                    <DialogTitle sx={{ pb: 3 }}>Create New Project</DialogTitle>
+                    <DialogContent sx={{ pt: 3 }}>
                         {validationError && (
                             <Alert severity="error" sx={{ mb: 2 }}>
                                 {validationError}
@@ -358,6 +358,7 @@ export default function ProjectsPage() {
                             disabled={creating}
                             error={!!validationError}
                             helperText={validationError ? '' : 'Enter a unique project name'}
+                            sx={{ mt: 2 }}
                         />
                     </DialogContent>
                     <DialogActions>

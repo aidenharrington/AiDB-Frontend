@@ -76,7 +76,7 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
         const fetchHistory = async () => {
 
             try {
-                const result = await authGuard(user, token, getQueryHistory);
+                const result = await authGuard(user, token, getQueryHistory, projectId);
                 setHistory(result.queries);
                 updateTierIfNotNull(result.tier);
                 setHistoryStale(false);

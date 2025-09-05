@@ -49,11 +49,14 @@ export const translateNlToSql = async (token: string, query: Query): Promise<{ q
     }
 }
 
-export const getQueryHistory = async (token: string): Promise<{ queries: Query[], tier: Tier | null }> => {
+export const getQueryHistory = async (token: string, projectId: string): Promise<{ queries: Query[], tier: Tier | null }> => {
     try {
         const response = await axios.get<APIResponse<Query[]>>(queryUrl, {
             headers: {
                 Authorization: `Bearer ${token}`,
+            },
+            params: {
+                projectId: projectId
             }
         })
 
