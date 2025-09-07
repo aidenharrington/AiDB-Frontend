@@ -16,9 +16,11 @@ type Props = {
     showHistoryOnly?: boolean;
     onQuerySelected?: (query: Query) => void;
     selectedQueryFromHistory?: Query | null;
+    onQueryHistoryUpdate?: (query: Query) => void;
+    inMemoryHistory?: Query[];
 };
 
-const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHistoryOnly = false, onQuerySelected, selectedQueryFromHistory }) => {
+const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHistoryOnly = false, onQuerySelected, selectedQueryFromHistory, onQueryHistoryUpdate, inMemoryHistory }) => {
     const { token, user } = useAuth();
     const { updateTierIfNotNull, tier } = useTier();
 
@@ -26,6 +28,7 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
     const [mode, setMode] = useState(showHistoryOnly ? 0 : 0);
     const [history, setHistory] = useState<Query[]>([]);
     const [historyStale, setHistoryStale] = useState(true);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [query, setQuery] = useState<Query>({
         id: null,
@@ -74,7 +77,9 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
 
     useEffect(() => {
         const fetchHistory = async () => {
-
+            if (historyLoading) return; // Prevent duplicate calls
+            
+            setHistoryLoading(true);
             try {
                 const result = await authGuard(user, token, getQueryHistory, projectId);
                 setHistory(result.queries);
@@ -83,13 +88,24 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
             } catch (err: any) {
                 console.log(err)
                 onError(err.message);
+            } finally {
+                setHistoryLoading(false);
             }
         };
 
-        if (showHistoryOnly && historyStale) {
+        // Only fetch from API if we don't have in-memory history and we're in history-only mode
+        if (showHistoryOnly && historyStale && !inMemoryHistory && !historyLoading) {
             fetchHistory();
         }
-    }, [showHistoryOnly, updateTierIfNotNull]);
+    }, [showHistoryOnly, historyStale, inMemoryHistory, updateTierIfNotNull]);
+
+    // Use in-memory history when available
+    useEffect(() => {
+        if (inMemoryHistory) {
+            setHistory(inMemoryHistory);
+            setHistoryStale(false);
+        }
+    }, [inMemoryHistory]);
 
     // Handle query selected from history
     useEffect(() => {
@@ -184,6 +200,11 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
             // Mark as translated and store the current input
             setHasTranslated(true);
             nlInputRef.current = query.nlQuery;
+            
+            // Add successful translation to in-memory history only if it was a new query (no ID before translation)
+            if (onQueryHistoryUpdate && !query.id) {
+                onQueryHistoryUpdate(result.query);
+            }
         } catch (error: unknown) {
             setLoading(false);
 

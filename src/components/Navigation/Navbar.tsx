@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -16,6 +16,7 @@ import {
   AccountCircle,
   Logout,
   Settings,
+  Feedback,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthProvider';
@@ -23,6 +24,7 @@ import { useDesignSystem } from '../../theme/ThemeProvider';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import AiDBLogo from '../AiDBLogo';
+import FeedbackModal from '../FeedbackModal';
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();
@@ -31,37 +33,16 @@ const Navbar: React.FC = () => {
   const { colors, typography } = useDesignSystem();
   
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [lastActivity, setLastActivity] = useState<number>(Date.now());
-  const [sessionTimeout, setSessionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
-  // Session timeout management (8 hours)
-  const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
-
-  useEffect(() => {
-    const updateActivity = () => setLastActivity(Date.now());
-    
-    // Track user activity
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    events.forEach(event => {
-      document.addEventListener(event, updateActivity, true);
-    });
-
-    // Check session timeout every minute
-    const timeoutCheck = setInterval(() => {
-      if (Date.now() - lastActivity > SESSION_TIMEOUT) {
-        handleLogout();
-      }
-    }, 60000);
-
-    setSessionTimeout(timeoutCheck);
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, updateActivity, true);
-      });
-      if (timeoutCheck) clearInterval(timeoutCheck);
-    };
-  }, [lastActivity]);
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }, [navigate]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -69,16 +50,6 @@ const Navbar: React.FC = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/');
-      if (sessionTimeout) clearInterval(sessionTimeout);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
   };
 
   const handleProfileClick = () => {
@@ -89,6 +60,14 @@ const Navbar: React.FC = () => {
   const handleSettingsClick = () => {
     handleMenuClose();
     // Navigate to settings page when implemented
+  };
+
+  const handleFeedbackClick = () => {
+    setFeedbackModalOpen(true);
+  };
+
+  const handleFeedbackModalClose = () => {
+    setFeedbackModalOpen(false);
   };
 
   const navigationItems = [
@@ -185,6 +164,21 @@ const Navbar: React.FC = () => {
             }}
           />
           
+          <Tooltip title="Submit feedback or report a bug">
+            <IconButton
+              onClick={handleFeedbackClick}
+              sx={{ 
+                color: colors.text.secondary,
+                '&:hover': {
+                  color: colors.primary.main,
+                  backgroundColor: colors.neutral[50],
+                },
+              }}
+            >
+              <Feedback />
+            </IconButton>
+          </Tooltip>
+          
           <Tooltip title="Account settings">
             <IconButton
               onClick={handleMenuOpen}
@@ -233,6 +227,11 @@ const Navbar: React.FC = () => {
           </Menu>
         </Box>
       </Toolbar>
+      
+      <FeedbackModal
+        open={feedbackModalOpen}
+        onClose={handleFeedbackModalClose}
+      />
     </AppBar>
   );
 };

@@ -30,7 +30,7 @@ import { getProject, uploadExcel, deleteTable } from '../service/ProjectService'
 import { Project, Table as ProjectTable } from '../types/Project';
 import QueryComponent from "../components/QueryComponent";
 import QueryResultsComponent from '../components/QueryResultsComponent';
-import { executeSql } from '../service/QueryService';
+import { executeSql, getQueryHistory } from '../service/QueryService';
 import { UserQueryData } from '../types/UserQueryData';
 import { useAuth } from '../context/AuthProvider';
 import { useTier } from '../context/TierProvider';
@@ -40,6 +40,7 @@ import { motion } from 'framer-motion';
 import MainLayout from '../components/Layout/MainLayout';
 import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog';
 import MessageDisplay from '../components/MessageDisplay';
+import { formatDate } from '../util/DateUtil';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -108,16 +109,43 @@ const ProjectDetailPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [projectLoading, setProjectLoading] = useState<boolean>(false);
   const [userQueryData, setUserQueryData] = useState<UserQueryData | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQueryFromHistory, setSelectedQueryFromHistory] = useState<Query | null>(null);
+  const [queryHistory, setQueryHistory] = useState<Query[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tableToDelete, setTableToDelete] = useState<ProjectTable | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const hasTables = project?.tables && project.tables.length > 0;
+
+  // Callback to add queries to in-memory history
+  // Note: This should only be called for new queries (without ID) to avoid duplicates
+  // when the same query is translated and then executed
+  const handleQueryHistoryUpdate = (query: Query) => {
+    setQueryHistory(prevHistory => {
+      // Check if query already exists to avoid duplicates
+      const exists = prevHistory.some(existingQuery => 
+        existingQuery.nlQuery === query.nlQuery && 
+        existingQuery.sqlQuery === query.sqlQuery
+      );
+      
+      if (!exists) {
+        // Add timestamp if not present
+        const queryWithTimestamp = {
+          ...query,
+          timestamp: query.timestamp || new Date().toISOString()
+        };
+        return [queryWithTimestamp, ...prevHistory];
+      }
+      
+      return prevHistory;
+    });
+  };
 
   // Fetch tier info if needed when page loads
   useEffect(() => {
@@ -126,8 +154,32 @@ const ProjectDetailPage: React.FC = () => {
     }
   }, [token, tier, fetchTierIfNeeded]);
 
+  // Fetch initial query history when component loads
+  useEffect(() => {
+    const fetchInitialHistory = async () => {
+      if (user && token && projectId && !historyLoading) {
+        setHistoryLoading(true);
+        try {
+          const result = await authGuard(user, token, getQueryHistory, projectId);
+          setQueryHistory(result.queries);
+          updateTierIfNotNull(result.tier);
+        } catch (error) {
+          console.error('Error fetching initial query history:', error);
+          // Don't show error to user for initial history fetch
+        } finally {
+          setHistoryLoading(false);
+        }
+      }
+    };
+
+    fetchInitialHistory();
+  }, [user, token, projectId, updateTierIfNotNull]);
+
   useEffect(() => {
     const fetchProject = async () => {
+        if (projectLoading) return; // Prevent duplicate calls
+        
+        setProjectLoading(true);
         try {
             setErrorMessage('');
             const result = await authGuard(user, token, getProject, projectId!);
@@ -139,10 +191,11 @@ const ProjectDetailPage: React.FC = () => {
             setErrorMessage(error instanceof Error ? error.message : 'Failed to fetch projects');
         } finally {
             setLoading(false);
+            setProjectLoading(false);
         }
     };
 
-    if (user && token) {
+    if (user && token && !projectLoading) {
         fetchProject();
     }
 }, [user, token, updateTierIfNotNull]);
@@ -219,6 +272,12 @@ const ProjectDetailPage: React.FC = () => {
       const result = await authGuard(user, token, executeSql, query);
       setUserQueryData(result.data);
       updateTierIfNotNull(result.tier);
+      
+      // Add successful execution to in-memory history only if it's a new query (no ID)
+      if (!query.id) {
+        handleQueryHistoryUpdate(query);
+      }
+      
       // Auto-switch to query results tab
       setActiveTab(1);
     } catch (error: unknown) {
@@ -294,6 +353,23 @@ const ProjectDetailPage: React.FC = () => {
     table.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     table.fileName.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  // Helper function to format cell values based on column type
+  const formatCellValue = (cell: any, columnIndex: number, table: ProjectTable): string => {
+    if (cell === null || cell === undefined) {
+      return '-';
+    }
+
+    // Check if this column is a DATE type
+    const column = table.columns?.[columnIndex];
+    if (column?.type === 'DATE') {
+      // For DATE columns, format epoch milliseconds as YYYY-MM-DD
+      return formatDate(cell);
+    }
+
+    // For non-DATE columns, return as string
+    return String(cell);
+  };
 
   return (
     <MainLayout>
@@ -523,7 +599,7 @@ const ProjectDetailPage: React.FC = () => {
                                                 whiteSpace: 'nowrap'
                                               }}
                                             >
-                                              {cell !== null && cell !== undefined ? String(cell) : ''}
+                                              {formatCellValue(cell, cellIndex, table)}
                                             </TableCell>
                                           ))}
                                         </TableRow>
@@ -606,7 +682,10 @@ const ProjectDetailPage: React.FC = () => {
                     border: `1px solid ${theme.palette.divider}`,
                     borderRadius: 2
                   }}>
-                    <QueryResultsComponent data={userQueryData} />
+                    <QueryResultsComponent 
+                      data={userQueryData} 
+                      columnMetadata={project?.tables.flatMap(table => table.columns) || []}
+                    />
                   </Box>
                 ) : (
                   <Box
@@ -678,6 +757,8 @@ const ProjectDetailPage: React.FC = () => {
                   onSubmit={handleSqlSubmit}
                   showHistoryOnly={true}
                   onQuerySelected={handleQuerySelected}
+                  onQueryHistoryUpdate={handleQueryHistoryUpdate}
+                  inMemoryHistory={queryHistory}
                 />
               </Box>
             </Box>
@@ -700,6 +781,8 @@ const ProjectDetailPage: React.FC = () => {
               onSubmit={handleSqlSubmit}
               showHistoryOnly={false}
               selectedQueryFromHistory={selectedQueryFromHistory}
+              onQueryHistoryUpdate={handleQueryHistoryUpdate}
+              inMemoryHistory={queryHistory}
             />
           </Box>
 
