@@ -172,9 +172,9 @@ const AboutPage: React.FC = () => {
                   fontWeight: typography.fontWeight.medium,
                 }}
               >
-                For now, you can reach out directly to me at{' '}
+                I'd love to hear your feedback or ideas! Please submit any thoughts or issues by clicking the Feedback button at the top right or reach out directly to me at{' '}
                 <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <Email sx={{ mr: 0.5, fontSize: 18 }} />
+                  <Email sx={{ mr: 0.5, fontSize: '1.1rem' }} />
                   <Box component="span" sx={{ 
                     color: colors.primary.main, 
                     fontWeight: typography.fontWeight.semibold,
@@ -184,10 +184,10 @@ const AboutPage: React.FC = () => {
                       color: colors.primary.dark,
                     }
                   }}>
-                    placeholder@gmail.com
+                    aharrington.dev@gmail.com
                   </Box>
                 </Box>
-                {' '}— I'd love to hear your feedback or ideas!
+                {' '}.
               </Typography>
 
               {/* Interests */}
