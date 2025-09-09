@@ -6,48 +6,45 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Paper,
     Typography,
     Box,
     useTheme
 } from '@mui/material';
 import { UserQueryData } from '../types/UserQueryData';
 import { FirestoreTimestampUtil } from '../util/FirestoreTimestampUtil';
+import { formatDate } from '../util/DateUtil';
+import { ColumnType } from '../types/Project';
+
+interface ColumnMetadata {
+    name: string;
+    type: ColumnType;
+}
 
 interface Props {
     data: UserQueryData | null;
+    columnMetadata?: ColumnMetadata[];
 }
 
-const QueryResultsComponent: React.FC<Props> = ({ data }) => {
+const QueryResultsComponent: React.FC<Props> = ({ data, columnMetadata }) => {
     const theme = useTheme();
 
     if (!data || data.length === 0) {
         return null;
     }
 
-    // Filter out 'id' column from headers
-    const headers = Object.keys(data[0]).filter(header => header.toLowerCase() !== 'id');
+    const headers = Object.keys(data[0]);
 
-    const formatCellValue = (value: any): string => {
+    const formatCellValue = (value: any, columnName: string): string => {
         // Handle null/undefined
         if (value === null || value === undefined) {
-            return '';
+            return '-';
         }
 
-        // Handle timestamp-like strings (ISO date strings)
-        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
-            try {
-                const date = new Date(value);
-                if (!isNaN(date.getTime())) {
-                    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        second: '2-digit'
-                    });
-                }
-            } catch (error) {
-                // If parsing fails, return as string
-            }
+        // Check if this column is a DATE type
+        const columnInfo = columnMetadata?.find(col => col.name === columnName);
+        if (columnInfo?.type === 'DATE') {
+            // For DATE columns, format epoch milliseconds as YYYY-MM-DD
+            return formatDate(value);
         }
 
         // Handle objects that might be timestamps
@@ -139,7 +136,7 @@ const QueryResultsComponent: React.FC<Props> = ({ data }) => {
                                             whiteSpace: 'nowrap'
                                         }}
                                     >
-                                        {formatCellValue(row[header])}
+                                        {formatCellValue(row[header], header)}
                                     </TableCell>
                                 ))}
                             </TableRow>
