@@ -27,7 +27,7 @@ jobs:
         run: npm run build
 
       - name: Setup Firebase
-        uses: w9jds/firebase-action@v2
+        uses: docker://w9jds/firebase-action:v14.16.0
         with:
           args: deploy --only hosting
           project: ${{ github.ref == 'refs/heads/main' && secrets.FIREBASE_PROJECT_PROD || secrets.FIREBASE_PROJECT_STAGE }}
