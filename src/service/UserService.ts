@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { handleHttpError } from '../util/HttpUtil';
 import { APIResponse, Tier } from '../types/Tier';
 
 const baseUrl = process.env.REACT_APP_API_BASE_URL || '';

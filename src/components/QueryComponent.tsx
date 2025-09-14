@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Box, TextField, Button, Typography, Paper, Stack, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import { getQueryHistory, translateNlToSql } from '../service/QueryService';
-import { Query } from "../types/Query";
+import { Box, Button, Divider, Paper, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from '../context/AuthProvider';
 import { useTier } from '../context/TierProvider';
+import { getQueryHistory, translateNlToSql } from '../service/QueryService';
+import { Query } from "../types/Query";
 import { authGuard } from "../util/AuthGuard";
-import { FirestoreTimestampUtil } from "../util/FirestoreTimestampUtil";
-import { formatLimitDisplay, isLimitReached, isDataLimitReached } from '../util/LimitDisplayUtil';
+import { formatLimitDisplay, isDataLimitReached, isLimitReached } from '../util/LimitDisplayUtil';
 import QueryHistory from './QueryHistory';
 
 type Props = {

@@ -1,16 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
 import {
-    Container, TextField, Button, Typography, Stack, Box,
+    Box,
+    Button,
+    Container,
+    Stack,
+    TextField,
+    Typography,
 } from '@mui/material';
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword
+} from 'firebase/auth';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AiDBLogo from '../components/AiDBLogo';
 import MessageDisplay from '../components/MessageDisplay';
-import {
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword
-} from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { useNavigate } from 'react-router-dom';
-import { setupNewUser, UserSetupError } from '../service/UserService';
+import { setupNewUser } from '../service/UserService';
 import { AuthErrorHandler } from '../util/AuthErrorHandler';
 import { PasswordValidator } from '../util/PasswordValidator';
 

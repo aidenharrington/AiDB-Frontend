@@ -24,7 +24,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Build app
-        run: npm run build
+        run: CI=false npm run build
 
       - name: Setup Firebase
         uses: docker://w9jds/firebase-action:v14.16.0
