@@ -1,0 +1,34 @@
+name: Frontend Deploy
+
+on:
+  push:
+    branches:
+      - stage
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'stage' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+      - name: Setup Firebase
+        uses: w9jds/firebase-action@v2
+        with:
+          args: deploy --only hosting
+          project: ${{ github.ref == 'refs/heads/main' && secrets.FIREBASE_PROJECT_PROD || secrets.FIREBASE_PROJECT_STAGE }}
+          token: ${{ github.ref == 'refs/heads/main' && secrets.FIREBASE_SERVICE_ACCOUNT_PROD || secrets.FIREBASE_SERVICE_ACCOUNT_STAGE }}
