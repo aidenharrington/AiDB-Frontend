@@ -19,14 +19,27 @@ jobs:
         with:
           node-version: '20'
 
-      # Copy the right env file for the branch
       - name: Setup environment
         run: |
+          echo "Branch: ${{ github.ref }}"
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "Using production environment"
             cp .env.prod .env
           else
+            echo "Using stage environment"  
             cp .env.stage .env
           fi
+          echo "Environment file created:"
+          ls -la .env
+
+      # Remove when working
+      - name: Debug environment
+        run: |
+          echo "Current branch: ${{ github.ref }}"
+          echo "Checking if .env exists:"
+          ls -la .env* || echo "No .env files found"
+          echo "Contents of .env (if exists):"
+          cat .env || echo ".env file not found"
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
