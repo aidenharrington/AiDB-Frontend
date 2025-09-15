@@ -9,7 +9,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'stage' }}
 
     steps:
       - name: Checkout code
@@ -19,6 +18,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+
+      # Copy the right env file for the branch
+      - name: Setup environment
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            cp .env.prod .env
+          else
+            cp .env.stage .env
+          fi
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
