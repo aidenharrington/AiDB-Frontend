@@ -3,6 +3,17 @@
     "prod": "aidb---prod",
     "stage": "aidb---stage"
   },
-  "targets": {},
+  "targets": {
+    "aidb---stage": {
+      "hosting": {
+        "prod": [
+          "aidb---prod"
+        ],
+        "stage": [
+          "aidb---stage"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

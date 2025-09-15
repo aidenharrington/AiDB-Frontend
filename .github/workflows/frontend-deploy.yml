@@ -29,7 +29,7 @@ jobs:
       - name: Deploy to Firebase
         uses: docker://w9jds/firebase-action:v14.16.0
         with:
-          args: deploy --only hosting --project ${{ github.ref == 'refs/heads/main' && 'prod' || 'stage' }}
+          args: deploy --only hosting:${{ github.ref == 'refs/heads/main' && 'prod' || 'stage' }} --project ${{ github.ref == 'refs/heads/main' && secrets.FIREBASE_PROJECT_PROD || secrets.FIREBASE_PROJECT_STAGE }}
         env:
           GCP_SA_KEY: ${{ github.ref == 'refs/heads/main' && secrets.FIREBASE_SERVICE_ACCOUNT_PROD || secrets.FIREBASE_SERVICE_ACCOUNT_STAGE }}
           FIREBASE_PROJECT: ${{ github.ref == 'refs/heads/main' && secrets.FIREBASE_PROJECT_PROD || secrets.FIREBASE_PROJECT_STAGE }}
