@@ -1,0 +1,19 @@
+{
+  "projects": {
+    "prod": "aidb---prod",
+    "stage": "aidb---stage"
+  },
+  "targets": {
+    "aidb---stage": {
+      "hosting": {
+        "prod": [
+          "aidb---prod"
+        ],
+        "stage": [
+          "aidb---stage"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
