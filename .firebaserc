@@ -13,6 +13,13 @@
           "aidb---stage"
         ]
       }
+    },
+    "aidb---prod": {
+      "hosting": {
+        "prod": [
+          "aidb---prod"
+        ]
+      }
     }
   },
   "etags": {}
