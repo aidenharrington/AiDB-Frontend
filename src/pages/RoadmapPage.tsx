@@ -1,28 +1,24 @@
-import React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
-} from '@mui/material';
 import {
   CheckCircle,
-  TrendingUp,
-  Star,
-  Rocket,
-  Security,
   CloudUpload,
-  Language,
-  Payment,
   Edit,
   Group,
+  Language,
+  Payment,
+  Rocket,
   School,
+  Security
 } from '@mui/icons-material';
-import { useDesignSystem } from '../theme/ThemeProvider';
+import {
+  Box,
+  Card,
+  CardContent,
+  Paper,
+  Typography
+} from '@mui/material';
+import React from 'react';
 import MainLayout from '../components/Layout/MainLayout';
+import { useDesignSystem } from '../theme/ThemeProvider';
 
 const RoadmapPage: React.FC = () => {
   const { colors, typography } = useDesignSystem();

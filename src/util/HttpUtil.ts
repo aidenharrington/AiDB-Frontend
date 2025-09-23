@@ -1,4 +1,3 @@
-import axios from 'axios';
 
 type ErrorOverride = Record<number, string>;
 

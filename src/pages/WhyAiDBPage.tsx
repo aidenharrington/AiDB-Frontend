@@ -1,26 +1,21 @@
-import React from 'react';
 import {
-  Box,
-  Typography,
-  Paper,
-  Card,
-  CardContent,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-} from '@mui/material';
-import {
-  QuestionAnswer,
-  Security,
+  CheckCircle,
   Cloud,
   Payment,
+  QuestionAnswer,
+  Security,
   Speed,
-  CheckCircle,
 } from '@mui/icons-material';
-import { useDesignSystem } from '../theme/ThemeProvider';
+import {
+  Box,
+  Card,
+  CardContent,
+  Paper,
+  Typography
+} from '@mui/material';
+import React from 'react';
 import MainLayout from '../components/Layout/MainLayout';
+import { useDesignSystem } from '../theme/ThemeProvider';
 
 const WhyAiDBPage: React.FC = () => {
   const { colors, typography } = useDesignSystem();
