@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useDesignSystem } from '../theme/ThemeProvider';
 import MainLayout from '../components/Layout/MainLayout';
+import SEOHead from '../components/SEOHead';
 
 const AboutPage: React.FC = () => {
   const { colors, typography } = useDesignSystem();
@@ -45,9 +46,47 @@ const AboutPage: React.FC = () => {
     },
   ];
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About AiDB Creator - Aiden Harrington",
+    "description": "Learn about Aiden Harrington, the software engineer who created AiDB to help teams and businesses transform their Excel data into powerful databases.",
+    "url": "https://askaidb.com/about",
+    "mainEntity": {
+      "@type": "Person",
+      "name": "Aiden Harrington",
+      "email": "aharrington.dev@gmail.com",
+      "jobTitle": "Software Engineer",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Vancouver",
+        "addressCountry": "CA"
+      },
+      "knowsAbout": [
+        "Software Engineering",
+        "AI-Powered Applications",
+        "Database Design",
+        "Web Development"
+      ],
+      "creator": {
+        "@type": "SoftwareApplication",
+        "name": "AiDB",
+        "description": "AI-Powered Database for natural language queries"
+      }
+    }
+  };
+
   return (
-    <MainLayout>
-      <Box sx={{ maxWidth: 1000, mx: 'auto', px: 3 }}>
+    <>
+      <SEOHead
+        title="About the Creator - Aiden Harrington"
+        description="Meet Aiden Harrington, the software engineer who created AiDB. Learn about his journey building an AI-powered database to help teams transform Excel data into powerful databases."
+        keywords="Aiden Harrington, software engineer, AiDB creator, Vancouver developer, AI database developer, Excel alternative creator"
+        canonicalUrl="/about"
+        structuredData={structuredData}
+      />
+      <MainLayout>
+        <Box sx={{ maxWidth: 1000, mx: 'auto', px: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 5, textAlign: 'center' }}>
           <Typography
@@ -221,10 +260,9 @@ const AboutPage: React.FC = () => {
             </Box>
           </Box>
         </Paper>
-
-
-      </Box>
-    </MainLayout>
+        </Box>
+      </MainLayout>
+    </>
   );
 };
 

@@ -16,6 +16,7 @@ import {
 import React from 'react';
 import MainLayout from '../components/Layout/MainLayout';
 import { useDesignSystem } from '../theme/ThemeProvider';
+import SEOHead from '../components/SEOHead';
 
 const WhyAiDBPage: React.FC = () => {
   const { colors, typography } = useDesignSystem();
@@ -53,9 +54,44 @@ const WhyAiDBPage: React.FC = () => {
     },
   ];
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Why AiDB - AI-Powered Database Benefits",
+    "description": "Learn why AiDB is the best solution for transforming Excel data into a powerful database with natural language queries.",
+    "url": "https://askaidb.com/why-aidb",
+    "mainEntity": {
+      "@type": "SoftwareApplication",
+      "name": "AiDB",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Natural language queries",
+        "Excel data import",
+        "Real-time data analysis",
+        "Secure data storage",
+        "No coding required",
+        "Instant results"
+      ]
+    }
+  };
+
   return (
-    <MainLayout>
-      <Box sx={{ maxWidth: 1000, mx: 'auto', px: 3 }}>
+    <>
+      <SEOHead
+        title="Why AiDB - AI-Powered Database Benefits"
+        description="Learn why AiDB is the best solution for transforming Excel data into a powerful database. Ask questions in plain English, get instant answers, and manage your data securely without coding."
+        keywords="AI database benefits, natural language queries, Excel alternative, data analysis tool, business intelligence, no-code database, secure data management"
+        canonicalUrl="/why-aidb"
+        structuredData={structuredData}
+      />
+      <MainLayout>
+        <Box sx={{ maxWidth: 1000, mx: 'auto', px: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 5, textAlign: 'center' }}>
           <Typography
@@ -202,8 +238,9 @@ const WhyAiDBPage: React.FC = () => {
             while letting you keep working with the data you already have in Excel.
           </Typography>
         </Paper>
-      </Box>
-    </MainLayout>
+        </Box>
+      </MainLayout>
+    </>
   );
 };
 

@@ -5,16 +5,137 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="AI-Powered Database - Intelligent data management and querying"
-    />
+    
+    <!-- Primary Meta Tags -->
+    <title>AiDB - AI-Powered Database | Query Your Data in Plain English</title>
+    <meta name="title" content="AiDB - AI-Powered Database | Query Your Data in Plain English" />
+    <meta name="description" content="Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required. Secure, fast, and easy to use." />
+    <meta name="keywords" content="AI database, natural language queries, Excel alternative, data analysis, business intelligence, no-code database, AI-powered analytics" />
+    <meta name="author" content="Aiden Harrington" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    <meta name="revisit-after" content="7 days" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://askaidb.com/" />
+    <meta property="og:title" content="AiDB - AI-Powered Database | Query Your Data in Plain English" />
+    <meta property="og:description" content="Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required." />
+    <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:site_name" content="AiDB" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://askaidb.com/" />
+    <meta property="twitter:title" content="AiDB - AI-Powered Database | Query Your Data in Plain English" />
+    <meta property="twitter:description" content="Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required." />
+    <meta property="twitter:image" content="%PUBLIC_URL%/logo512.png" />
+    
+    <!-- Additional SEO Meta Tags -->
+    <meta name="application-name" content="AiDB" />
+    <meta name="apple-mobile-web-app-title" content="AiDB" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#000000" />
+    <meta name="msapplication-config" content="%PUBLIC_URL%/browserconfig.xml" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://askaidb.com/" />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="//www.google-analytics.com" />
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+    
+    <!-- Resource Hints for Performance -->
+    <link rel="preload" href="%PUBLIC_URL%/logo192.png" as="image" type="image/png" />
+    <link rel="preload" href="%PUBLIC_URL%/logo512.png" as="image" type="image/png" />
+    
+    <!-- Critical CSS inline (if needed) -->
+    <style>
+      /* Critical above-the-fold styles */
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #ffffff;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
+      /* Loading spinner styles */
+      .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+    </style>
+    
+    <!-- Favicon and Icons -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
+    
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "AiDB",
+      "alternateName": "AI-Powered Database",
+      "url": "https://askaidb.com",
+      "description": "Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Person",
+        "name": "Aiden Harrington",
+        "email": "aharrington.dev@gmail.com",
+        "jobTitle": "Software Engineer",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Vancouver",
+          "addressCountry": "CA"
+        }
+      },
+      "featureList": [
+        "Natural language queries",
+        "Excel data import",
+        "Real-time data analysis",
+        "Secure data storage",
+        "No coding required",
+        "Instant results"
+      ],
+      "screenshot": "%PUBLIC_URL%/logo512.png"
+    }
+    </script>
+    
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -24,11 +145,16 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>AiDB</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <noscript>
+      <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>You need to enable JavaScript to run AiDB. Please enable JavaScript in your browser settings and refresh the page.</p>
+        <p>AiDB is a modern web application that requires JavaScript to function properly.</p>
+      </div>
+    </noscript>
+    <div id="root" role="main" aria-label="AiDB Application"></div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

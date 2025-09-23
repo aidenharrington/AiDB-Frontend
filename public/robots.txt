@@ -1,3 +1,26 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap location
+Sitemap: https://askaidb.com/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Allow all search engines to index the site
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Block access to build files and sensitive directories
+Disallow: /build/
+Disallow: /node_modules/
+Disallow: /.env
+Disallow: /src/
+Disallow: /package.json
+Disallow: /package-lock.json

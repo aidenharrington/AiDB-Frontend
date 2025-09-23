@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
 import AuthPage from './pages/AuthPage';
@@ -11,6 +12,7 @@ import AboutPage from './pages/AboutPage';
 import { AuthProvider, useAuth } from './context/AuthProvider';
 import { TierProvider } from './context/TierProvider';
 import { ThemeProvider, Box, CircularProgress } from './theme';
+import PerformanceMonitor from './components/PerformanceMonitor';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -105,15 +107,18 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <TierProvider>
-        <AuthProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </AuthProvider>
-      </TierProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider>
+        <TierProvider>
+          <AuthProvider>
+            <PerformanceMonitor />
+            <Router>
+              <AppRoutes />
+            </Router>
+          </AuthProvider>
+        </TierProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 };
 
