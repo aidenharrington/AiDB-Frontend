@@ -19,6 +19,7 @@ import {
 import { useDesignSystem } from '../theme/ThemeProvider';
 import MainLayout from '../components/Layout/MainLayout';
 import SEOHead from '../components/SEOHead';
+import profilePic from '../assets/profile_pic_resized.jpg';
 
 const AboutPage: React.FC = () => {
   const { colors, typography } = useDesignSystem();
@@ -113,6 +114,7 @@ const AboutPage: React.FC = () => {
         >
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, alignItems: 'flex-start' }}>
             <Avatar
+              src={profilePic}
               sx={{
                 width: 120,
                 height: 120,
@@ -120,6 +122,15 @@ const AboutPage: React.FC = () => {
                 fontSize: '2.5rem',
                 fontWeight: typography.fontWeight.bold,
                 flexShrink: 0,
+                objectFit: 'cover',
+                objectPosition: 'center',
+                border: `3px solid ${colors.text.primary}`,
+                '& img': {
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  transform: 'scale(1.2)',
+                  transformOrigin: 'center center',
+                },
               }}
             >
               A

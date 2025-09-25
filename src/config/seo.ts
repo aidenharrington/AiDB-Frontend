@@ -5,7 +5,7 @@ export const SEO_CONFIG = {
     fullName: 'AiDB - AI-Powered Database',
     description: 'Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required.',
     url: 'https://askaidb.com',
-    logo: '/logo512.png',
+    logo: '/aidbLogo.svg',
     twitterHandle: '@aidb_dev', // Update with actual Twitter handle
     facebookAppId: '', // Add if you have a Facebook app
   },
@@ -14,7 +14,7 @@ export const SEO_CONFIG = {
     title: 'AiDB - AI-Powered Database | Query Your Data in Plain English',
     description: 'Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required. Secure, fast, and easy to use.',
     keywords: 'AI database, natural language queries, Excel alternative, data analysis, business intelligence, no-code database, AI-powered analytics',
-    image: '/logo512.png',
+    image: '/aidbLogo.svg',
     type: 'website',
   },
   
@@ -63,7 +63,7 @@ export const SEO_CONFIG = {
       '@type': 'Organization',
       name: 'AiDB',
       url: 'https://askaidb.com',
-      logo: 'https://askaidb.com/logo512.png',
+      logo: 'https://askaidb.com/aidbLogo.svg',
       description: 'AI-Powered Database for natural language queries',
       founder: {
         '@type': 'Person',

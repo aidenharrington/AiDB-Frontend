@@ -4,21 +4,9 @@
   "description": "Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required.",
   "icons": [
     {
-      "src": "favicon.svg",
+      "src": "aidbLogo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
@@ -32,9 +20,9 @@
   "categories": ["business", "productivity", "utilities"],
   "screenshots": [
     {
-      "src": "logo512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "aidbLogo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "form_factor": "wide"
     }
   ]
