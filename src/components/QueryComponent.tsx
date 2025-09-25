@@ -17,9 +17,10 @@ type Props = {
     selectedQueryFromHistory?: Query | null;
     onQueryHistoryUpdate?: (query: Query) => void;
     inMemoryHistory?: Query[];
+    onTranslationSuccess?: () => void;
 };
 
-const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHistoryOnly = false, onQuerySelected, selectedQueryFromHistory, onQueryHistoryUpdate, inMemoryHistory }) => {
+const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHistoryOnly = false, onQuerySelected, selectedQueryFromHistory, onQueryHistoryUpdate, inMemoryHistory, onTranslationSuccess }) => {
     const { token, user } = useAuth();
     const { updateTierIfNotNull, tier } = useTier();
 
@@ -204,6 +205,11 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
             if (onQueryHistoryUpdate && !query.id) {
                 onQueryHistoryUpdate(result.query);
             }
+            
+            // Notify parent of successful translation
+            if (onTranslationSuccess) {
+                onTranslationSuccess();
+            }
         } catch (error: unknown) {
             setLoading(false);
 
@@ -361,19 +367,6 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                                 size="small"
                                 sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%' } }}
                             />
-                            {hasTranslated && query.sqlQuery && (
-                                <Typography 
-                                    variant="caption" 
-                                    sx={{ 
-                                        display: 'block', 
-                                        mt: 0.5, 
-                                        color: 'success.main',
-                                        fontStyle: 'italic'
-                                    }}
-                                >
-                                    ✓ Translation completed
-                                </Typography>
-                            )}
                         </Box>
                         <Box display="flex" gap={1} sx={{ mt: 1 }}>
                             <Button 

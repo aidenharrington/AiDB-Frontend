@@ -108,6 +108,7 @@ const ProjectDetailPage: React.FC = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [translationSuccessMessage, setTranslationSuccessMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [projectLoading, setProjectLoading] = useState<boolean>(false);
   const [userQueryData, setUserQueryData] = useState<UserQueryData | null>(null);
@@ -236,7 +237,7 @@ const ProjectDetailPage: React.FC = () => {
       if (project && result.project) {
         setProject({
           ...project,
-          tables: [...project.tables, ...result.project.tables]
+          tables: [...result.project.tables, ...project.tables]
         });
       } else {
         setProject(result.project);
@@ -264,9 +265,18 @@ const ProjectDetailPage: React.FC = () => {
     }
   };
 
+  const handleTranslationSuccess = () => {
+    setTranslationSuccessMessage('Translation completed successfully!');
+    // Clear the message after 3 seconds
+    setTimeout(() => {
+      setTranslationSuccessMessage('');
+    }, 3000);
+  };
+
   const handleSqlSubmit = async (query: Query) => {
     setLoading(true);
     setErrorMessage('');
+    setTranslationSuccessMessage(''); // Clear translation message when submitting
 
     try {
       const result = await authGuard(user, token, executeSql, query);
@@ -769,89 +779,109 @@ const ProjectDetailPage: React.FC = () => {
         <Box sx={{ 
           mt: 2,
           display: 'flex',
-          gap: 2,
-          height: 300,
-          overflow: 'hidden'
+          flexDirection: 'column'
         }}>
-          {/* Query Component */}
-          <Box sx={{ flex: 1 }}>
-            <QueryComponent 
-              projectId={projectId!} 
-              onError={setErrorMessage} 
-              onSubmit={handleSqlSubmit}
-              showHistoryOnly={false}
-              selectedQueryFromHistory={selectedQueryFromHistory}
-              onQueryHistoryUpdate={handleQueryHistoryUpdate}
-              inMemoryHistory={queryHistory}
-            />
-          </Box>
-
-          {/* File Upload Section */}
           <Box sx={{ 
-            width: 300,
-            p: 2,
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: 2,
-            backgroundColor: theme.palette.background.paper,
             display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
+            gap: 2,
+            height: 300,
+            overflow: 'hidden'
           }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Upload Excel File
-            </Typography>
-            
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                style={{ display: 'none' }}
-                id="excel-upload"
-                onChange={handleFileChange}
+            {/* Query Component */}
+            <Box sx={{ flex: 1 }}>
+              <QueryComponent 
+                projectId={projectId!} 
+                onError={setErrorMessage} 
+                onSubmit={handleSqlSubmit}
+                showHistoryOnly={false}
+                selectedQueryFromHistory={selectedQueryFromHistory}
+                onQueryHistoryUpdate={handleQueryHistoryUpdate}
+                inMemoryHistory={queryHistory}
+                onTranslationSuccess={handleTranslationSuccess}
               />
-              <label htmlFor="excel-upload">
-                <Button variant="outlined" component="span" startIcon={<UploadIcon />} fullWidth>
-                  Choose File
-                </Button>
-              </label>
-
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleUpload}
-                disabled={!selectedFile || loading}
-                fullWidth
-              >
-                {loading ? 'Uploading...' : 'Upload'}
-              </Button>
             </Box>
 
-            {selectedFile && (
-              <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-all' }}>
-                Selected: {selectedFile.name}
+            {/* File Upload Section */}
+            <Box sx={{ 
+              width: 300,
+              p: 2,
+              border: `1px solid ${theme.palette.divider}`,
+              borderRadius: 2,
+              backgroundColor: theme.palette.background.paper,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Upload Excel File
               </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  style={{ display: 'none' }}
+                  id="excel-upload"
+                  onChange={handleFileChange}
+                />
+                <label htmlFor="excel-upload">
+                  <Button variant="outlined" component="span" startIcon={<UploadIcon />} fullWidth>
+                    Choose File
+                  </Button>
+                </label>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleUpload}
+                  disabled={!selectedFile || loading}
+                  fullWidth
+                >
+                  {loading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </Box>
+
+              {selectedFile && (
+                <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-all' }}>
+                  Selected: {selectedFile.name}
+                </Typography>
+              )}
+
+              {tier && (
+                <Typography variant="caption" color="text.secondary">
+                  Max size: {parseInt(tier.maxFileSize) === -1 ? '∞' : `${tier.maxFileSize}MB`}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+          
+          {/* Messages positioned below the query component without affecting its layout */}
+          <Box sx={{ mt: 1, minHeight: 0 }}>
+            {translationSuccessMessage && (
+              <MessageDisplay 
+                message={translationSuccessMessage} 
+                type="success" 
+                maxWidth="100%"
+              />
             )}
 
-            {tier && (
-              <Typography variant="caption" color="text.secondary">
-                Max size: {parseInt(tier.maxFileSize) === -1 ? '∞' : `${tier.maxFileSize}MB`}
-              </Typography>
+            {errorMessage && (
+              <MessageDisplay 
+                message={errorMessage} 
+                type="error" 
+                maxWidth="600px"
+              />
+            )}
+            
+            {successMessage && (
+              <MessageDisplay 
+                message={successMessage} 
+                type="success" 
+                maxWidth="600px"
+              />
             )}
           </Box>
         </Box>
-
-        {/* Error and Success Messages */}
-        <MessageDisplay 
-          message={errorMessage} 
-          type="error" 
-          maxWidth="600px"
-        />
-        
-        <MessageDisplay 
-          message={successMessage} 
-          type="success" 
-          maxWidth="600px"
-        />
 
         {/* Delete Table Confirmation Dialog */}
         <DeleteConfirmationDialog

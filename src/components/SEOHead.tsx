@@ -16,7 +16,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   description = 'Transform your Excel data into a powerful database. Ask questions in plain English and get instant answers. No coding required. Secure, fast, and easy to use.',
   keywords = 'AI database, natural language queries, Excel alternative, data analysis, business intelligence, no-code database, AI-powered analytics',
   canonicalUrl = 'https://askaidb.com',
-  ogImage = '/logo512.png',
+  ogImage = '/aidbLogo.svg',
   ogType = 'website',
   structuredData
 }) => {

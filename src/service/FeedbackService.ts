@@ -7,7 +7,7 @@ const feedbackUrl = `${baseUrl}/feedback`;
 
 export const submitFeedback = async (token: string, feedback: FeedbackDTO): Promise<FeedbackSubmissionResponse> => {
   try {
-    const response = await axios.post<{ data: string; message: string; success: boolean }>(
+    const response = await axios.post<{ meta: any; data: string }>(
       feedbackUrl,
       feedback,
       {
@@ -18,9 +18,10 @@ export const submitFeedback = async (token: string, feedback: FeedbackDTO): Prom
       }
     );
 
+    // Backend returns APIResponse<String> format with 200 status for success
     return {
-      success: response.data.success,
-      message: response.data.message || 'Feedback submitted successfully'
+      success: true,
+      message: 'Feedback submitted successfully'
     };
   } catch (error: any) {
     // Handle specific feedback submission errors
