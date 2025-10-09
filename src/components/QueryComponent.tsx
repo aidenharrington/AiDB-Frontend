@@ -282,9 +282,9 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
     }
 
     return (
-        <Paper elevation={3} sx={{ p: 2, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Paper elevation={3} sx={{ p: 2, width: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Mode Toggle and Limits */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {tier && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -338,25 +338,33 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                 </ToggleButtonGroup>
             </Box>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 1 }} />
 
             {/* Content Area */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', pt: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 {mode === 0 && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
-                        <Box sx={{ minHeight: 60 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Box sx={{ flexShrink: 0 }}>
                             <TextField
                                 label="Natural Language"
                                 multiline
-                                rows={2}
+                                minRows={2}
+                                maxRows={3}
                                 fullWidth
                                 value={query.nlQuery}
                                 onChange={(e) => handleNlInputChange(e.target.value)}
                                 disabled={loading}
                                 size="small"
+                                sx={{
+                                    '@media (max-height: 768px)': {
+                                        '& .MuiInputBase-root': { 
+                                            maxHeight: '60px'
+                                        }
+                                    }
+                                }}
                             />
                         </Box>
-                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 80 }}>
+                        <Box sx={{ flexShrink: 0 }}>
                             <TextField
                                 label="Generated SQL"
                                 multiline
@@ -365,10 +373,11 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                                 onChange={(e) => handleSqlInputChange(e.target.value)}
                                 disabled={loading}
                                 size="small"
-                                sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%' } }}
+                                minRows={3}
+                                maxRows={6}
                             />
                         </Box>
-                        <Box display="flex" gap={1} sx={{ mt: 1 }}>
+                        <Box display="flex" gap={1} sx={{ flexShrink: 0 }}>
                             <Button 
                                 variant="contained" 
                                 size="small"
@@ -409,8 +418,8 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                 )}
 
                 {mode === 1 && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
-                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 150 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Box sx={{ flexShrink: 0 }}>
                             <TextField
                                 label="SQL Query"
                                 multiline
@@ -419,10 +428,11 @@ const QueryComponent: React.FC<Props> = ({ projectId, onError, onSubmit, showHis
                                 onChange={(e) => handleSqlInputChange(e.target.value)}
                                 disabled={loading}
                                 size="small"
-                                sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%' } }}
+                                minRows={4}
+                                maxRows={8}
                             />
                         </Box>
-                        <Box display="flex" gap={1} sx={{ mt: 1 }}>
+                        <Box display="flex" gap={1} sx={{ flexShrink: 0 }}>
                             <Button 
                                 variant="contained" 
                                 color="success" 
