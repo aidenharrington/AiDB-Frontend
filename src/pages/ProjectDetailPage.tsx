@@ -16,14 +16,16 @@ import {
   Collapse,
   IconButton,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Tooltip
 } from '@mui/material';
 import { 
   CloudUpload as UploadIcon,
   History as HistoryIcon,
   Search as SearchIcon,
   Close as CloseIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  InfoOutlined as InfoIcon
 } from '@mui/icons-material';
 import { useParams } from 'react-router-dom';
 import { getProject, uploadExcel, deleteTable } from '../service/ProjectService';
@@ -36,7 +38,6 @@ import { useAuth } from '../context/AuthProvider';
 import { useTier } from '../context/TierProvider';
 import { authGuard } from '../util/AuthGuard';
 import { Query } from '../types/Query';
-import { motion } from 'framer-motion';
 import MainLayout from '../components/Layout/MainLayout';
 import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog';
 import MessageDisplay from '../components/MessageDisplay';
@@ -57,10 +58,11 @@ function TabPanel(props: TabPanelProps) {
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
+      style={{ height: '100%', display: value === index ? 'flex' : 'none', flexDirection: 'column' }}
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 0 }}>
+        <Box sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
           {children}
         </Box>
       )}
@@ -73,36 +75,7 @@ const ProjectDetailPage: React.FC = () => {
   const { updateTierIfNotNull, tier, fetchTierIfNeeded } = useTier();
   const { projectId } = useParams<{ projectId: string }>();
   const theme = useTheme();
-
-  // Add global styles for table scroll bars
-  React.useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .table-container::-webkit-scrollbar {
-        height: 0px;
-      }
-      .table-container:hover::-webkit-scrollbar {
-        height: 8px !important;
-      }
-      .table-container:hover::-webkit-scrollbar-track {
-        background: #f5f5f5 !important;
-        border-radius: 4px !important;
-      }
-      .table-container:hover::-webkit-scrollbar-thumb {
-        background: #c1c1c1 !important;
-        border-radius: 4px !important;
-      }
-      .table-container:hover::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8 !important;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      if (document.head.contains(style)) {
-        document.head.removeChild(style);
-      }
-    };
-  }, []);
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [project, setProject] = useState<Project | null>(null);
@@ -113,6 +86,7 @@ const ProjectDetailPage: React.FC = () => {
   const [projectLoading, setProjectLoading] = useState<boolean>(false);
   const [userQueryData, setUserQueryData] = useState<UserQueryData | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [activeTableTab, setActiveTableTab] = useState(0);
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQueryFromHistory, setSelectedQueryFromHistory] = useState<Query | null>(null);
@@ -320,6 +294,10 @@ const ProjectDetailPage: React.FC = () => {
     setActiveTab(newValue);
   };
 
+  const handleTableTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTableTab(newValue);
+  };
+
   const handleDeleteTableClick = (table: ProjectTable, event: React.MouseEvent) => {
     event.stopPropagation();
     setTableToDelete(table);
@@ -364,6 +342,21 @@ const ProjectDetailPage: React.FC = () => {
     table.fileName.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
+  // Reset active table tab when filtered tables change
+  useEffect(() => {
+    if (activeTableTab >= filteredTables.length && filteredTables.length > 0) {
+      setActiveTableTab(0);
+    }
+  }, [filteredTables.length, activeTableTab]);
+
+  // Reset scroll position when table tab changes
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+      tableContainerRef.current.scrollLeft = 0;
+    }
+  }, [activeTableTab]);
+
   // Helper function to format cell values based on column type
   const formatCellValue = (cell: any, columnIndex: number, table: ProjectTable): string => {
     if (cell === null || cell === undefined) {
@@ -384,23 +377,26 @@ const ProjectDetailPage: React.FC = () => {
   return (
     <MainLayout>
       <Box sx={{ 
-        height: 'calc(100vh - 64px - 48px)', // Full height minus navbar and padding
         display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
+        flexDirection: 'column'
       }}>
-        {/* Header with Tabs and Search */}
+        {/* Project Name */}
+        <Box sx={{ mb: 0.5, flexShrink: 0 }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            {project?.name || 'Project'}
+          </Typography>
+        </Box>
+
+        {/* Header with Main Tabs and Search */}
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
-          mb: 2,
-          minHeight: 64
+          mb: 1,
+          minHeight: 48,
+          flexShrink: 0
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', mr: 3 }}>
-              {project?.name || 'Project'}
-            </Typography>
             <Tabs 
               value={activeTab} 
               onChange={handleTabChange}
@@ -418,20 +414,22 @@ const ProjectDetailPage: React.FC = () => {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <TextField
-              size="small"
-              placeholder="Search tables..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ width: 250 }}
-            />
+            {activeTab === 0 && (
+              <TextField
+                size="small"
+                placeholder="Search tables..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ width: 250 }}
+              />
+            )}
             <IconButton
               onClick={() => setHistoryDrawerOpen(!historyDrawerOpen)}
               sx={{ 
@@ -447,219 +445,230 @@ const ProjectDetailPage: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Main Content Area */}
+        {/* Table Tabs (Sheet Names) - Below Main Tabs */}
+        {hasTables && activeTab === 0 && (
+          <Box sx={{ mb: 1, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+            <Tabs 
+              value={activeTableTab} 
+              onChange={handleTableTabChange}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{ 
+                minHeight: 36,
+                ml: 0,
+                '& .MuiTabs-scroller': {
+                  marginLeft: 0,
+                  paddingLeft: 0
+                },
+                '& .MuiTabs-flexContainer': {
+                  paddingLeft: 0,
+                  marginLeft: 0
+                },
+                '& .MuiTabs-scrollButtons': {
+                  width: '40px',
+                  '&.Mui-disabled': {
+                    width: 0,
+                    opacity: 0,
+                    pointerEvents: 'none'
+                  }
+                },
+                '& .MuiTab-root': { 
+                  minHeight: 36,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                  py: 0.5,
+                  '&:first-of-type': {
+                    marginLeft: 0,
+                    paddingLeft: '16px'
+                  }
+                }
+              }}
+            >
+              {filteredTables.map((table, index) => (
+                <Tab key={index} label={table.displayName} />
+              ))}
+            </Tabs>
+          </Box>
+        )}
+
+        {/* Main Content Area - This is the flexible part that shrinks */}
         <Box sx={{ 
-          flex: 1, 
           display: 'flex', 
           gap: 2,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          minHeight: 0,
+          maxHeight: 'calc(100vh - 64px - 48px - 380px)', // Constrain table area height
+          '@media (max-height: 900px)': {
+            maxHeight: 'calc(100vh - 64px - 48px - 350px)'
+          },
+          '@media (max-height: 768px)': {
+            maxHeight: 'calc(100vh - 64px - 48px - 310px)'
+          }
         }}>
           {/* Main Content */}
           <Box sx={{ 
             flex: 1, 
             display: 'flex', 
             flexDirection: 'column',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            minHeight: 0
           }}>
             {/* Tab Panels */}
             <TabPanel value={activeTab} index={0}>
               <Box sx={{ 
-                height: '100%', 
+                flex: 1,
                 display: 'flex', 
                 flexDirection: 'column',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                minHeight: 0
               }}>
-                {hasTables ? (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      overflowX: 'auto',
-                      gap: 3,
-                      scrollSnapType: 'x mandatory',
-                      px: 1,
-                      flex: 1,
-                      pb: 2
-                    }}
-                  >
-                    {filteredTables.map((table, index) => (
-                      <motion.div
-                        key={index}
-                        whileHover={{ scale: 1.01 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                        style={{
-                          scrollSnapAlign: 'start',
-                          flex: '0 0 auto',
-                          width: 500,
-                          height: '100%',
+                {hasTables && filteredTables.length > 0 ? (
+                  (() => {
+                    const table = filteredTables[activeTableTab];
+                    return (
+                      <Paper
+                        elevation={2}
+                        sx={{
+                          flex: 1,
+                          borderRadius: 2,
+                          background: theme.palette.background.paper,
+                          border: `1px solid ${theme.palette.divider}`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          overflow: 'hidden',
+                          minHeight: 0
                         }}
-                        
                       >
-                        <Paper
-                          elevation={2}
-                          sx={{
-                            height: '100%',
-                            borderRadius: 2,
-                            background: theme.palette.background.paper,
-                            border: `1px solid ${theme.palette.divider}`,
-                            display: 'flex',
-                            flexDirection: 'column'
-                          }}
-                        >
-                          <Box sx={{ 
-                            p: 2, 
-                            borderBottom: `1px solid ${theme.palette.divider}`,
-                            backgroundColor: theme.palette.grey[50],
-                            flexShrink: 0,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}>
-                            <Box>
-                              <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                                {table.displayName}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {table.fileName} • {table.rows?.length || 0} rows
-                              </Typography>
-                            </Box>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={(e) => handleDeleteTableClick(table, e)}
-                              sx={{
-                                '&:hover': {
-                                  backgroundColor: 'error.light',
-                                  color: 'error.contrastText'
-                                }
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
+                        {/* Table Header */}
+                        <Box sx={{ 
+                          p: 2, 
+                          borderBottom: `1px solid ${theme.palette.divider}`,
+                          backgroundColor: theme.palette.grey[50],
+                          flexShrink: 0,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <Box>
+                            <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
+                              {table.displayName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {table.fileName} • {table.rows?.length || 0} rows • {table.columns?.length || 0} columns
+                            </Typography>
                           </Box>
-                          <TableContainer 
-                            className="table-container"
-                            sx={{ 
-                              flex: 1,
-                              overflowX: 'auto',
-                              '& .MuiTable-root': {
-                                borderCollapse: 'separate',
-                                borderSpacing: 0,
-                                minWidth: '100%'
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(e) => handleDeleteTableClick(table, e)}
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: 'error.light',
+                                color: 'error.contrastText'
                               }
                             }}
                           >
-                            <Table stickyHeader size="small" sx={{ minWidth: Math.max(500, (table.columns?.length || 0) * 120) }}>
-                              <TableHead>
-                                <TableRow>
-                                  {table.columns?.map((col, i) => (
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+
+                        {/* Scrollable Table Container */}
+                        <TableContainer 
+                          ref={tableContainerRef}
+                          sx={{ 
+                            flex: 1,
+                            minHeight: 0,
+                            overflow: 'auto',
+                            '&::-webkit-scrollbar': {
+                              width: '12px',
+                              height: '12px'
+                            },
+                            '&::-webkit-scrollbar-track': {
+                              background: theme.palette.grey[100],
+                              borderRadius: '4px'
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                              background: theme.palette.grey[400],
+                              borderRadius: '4px',
+                              '&:hover': {
+                                background: theme.palette.grey[600]
+                              }
+                            },
+                            '& .MuiTable-root': {
+                              borderCollapse: 'separate',
+                              borderSpacing: 0
+                            }
+                          }}
+                        >
+                          <Table stickyHeader size="small">
+                            <TableHead>
+                              <TableRow>
+                                {table.columns?.map((col, i) => (
+                                  <TableCell 
+                                    key={i} 
+                                    sx={{ 
+                                      fontWeight: 600,
+                                      backgroundColor: theme.palette.grey[100],
+                                      borderBottom: `2px solid ${theme.palette.divider}`,
+                                      fontSize: '0.875rem',
+                                      py: 1.5,
+                                      px: 2,
+                                      minWidth: 150,
+                                      whiteSpace: 'nowrap',
+                                      position: 'sticky',
+                                      top: 0,
+                                      zIndex: 1
+                                    }}
+                                  >
+                                    {col.name}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {table.rows?.map((row, rowIndex) => (
+                                <TableRow 
+                                  key={rowIndex}
+                                  sx={{
+                                    '&:nth-of-type(odd)': {
+                                      backgroundColor: theme.palette.action.hover,
+                                    },
+                                    '&:hover': {
+                                      backgroundColor: theme.palette.action.selected,
+                                    }
+                                  }}
+                                >
+                                  {row.map((cell, cellIndex) => (
                                     <TableCell 
-                                      key={i} 
+                                      key={cellIndex}
                                       sx={{ 
-                                        fontWeight: 600,
-                                        backgroundColor: theme.palette.grey[100],
-                                        borderBottom: `2px solid ${theme.palette.divider}`,
                                         fontSize: '0.875rem',
-                                        py: 1.5,
+                                        py: 1,
                                         px: 2,
-                                        minWidth: 120,
-                                        maxWidth: 250,
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
+                                        borderBottom: `1px solid ${theme.palette.divider}`,
+                                        minWidth: 150,
                                         whiteSpace: 'nowrap'
                                       }}
                                     >
-                                      {col.name}
+                                      {formatCellValue(cell, cellIndex, table)}
                                     </TableCell>
                                   ))}
                                 </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {(() => {
-                                  const maxRows = 20; // Fixed number of rows to display
-                                  const actualRows = table.rows || [];
-                                  const displayRows = actualRows.slice(0, maxRows);
-                                  const emptyRows = Math.max(0, maxRows - actualRows.length);
-                                  
-                                  return (
-                                    <>
-                                      {displayRows.map((row, rowIndex) => (
-                                        <TableRow 
-                                          key={rowIndex}
-                                          sx={{
-                                            '&:nth-of-type(odd)': {
-                                              backgroundColor: theme.palette.action.hover,
-                                            },
-                                            '&:hover': {
-                                              backgroundColor: theme.palette.action.selected,
-                                            }
-                                          }}
-                                        >
-                                          {row.map((cell, cellIndex) => (
-                                            <TableCell 
-                                              key={cellIndex}
-                                              sx={{ 
-                                                fontSize: '0.875rem',
-                                                py: 1,
-                                                px: 2,
-                                                borderBottom: `1px solid ${theme.palette.divider}`,
-                                                minWidth: 120,
-                                                maxWidth: 250,
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap'
-                                              }}
-                                            >
-                                              {formatCellValue(cell, cellIndex, table)}
-                                            </TableCell>
-                                          ))}
-                                        </TableRow>
-                                      ))}
-                                      {emptyRows > 0 && Array.from({ length: emptyRows }).map((_, index) => (
-                                        <TableRow 
-                                          key={`empty-${index}`}
-                                          sx={{
-                                            '&:nth-of-type(odd)': {
-                                              backgroundColor: theme.palette.action.hover,
-                                            }
-                                          }}
-                                        >
-                                          {table.columns?.map((col, cellIndex) => (
-                                            <TableCell 
-                                              key={cellIndex}
-                                              sx={{ 
-                                                fontSize: '0.875rem',
-                                                py: 1,
-                                                px: 2,
-                                                borderBottom: `1px solid ${theme.palette.divider}`,
-                                                minWidth: 120,
-                                                maxWidth: 250,
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap'
-                                              }}
-                                            >
-                                              &nbsp;
-                                            </TableCell>
-                                          ))}
-                                        </TableRow>
-                                      ))}
-                                    </>
-                                  );
-                                })()}
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        </Paper>
-                      </motion.div>
-                    ))}
-                  </Box>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Paper>
+                    );
+                  })()
                 ) : (
                   <Box
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      height: '100%',
+                      flex: 1,
                       border: `2px dashed ${theme.palette.divider}`,
                       borderRadius: 2,
                       backgroundColor: theme.palette.background.default,
@@ -667,10 +676,10 @@ const ProjectDetailPage: React.FC = () => {
                   >
                     <Box sx={{ textAlign: 'center' }}>
                       <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                        No tables available
+                        {searchTerm ? 'No tables match your search' : 'No tables available'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Upload an Excel file to view tables
+                        {searchTerm ? 'Try a different search term' : 'Upload an Excel file to view tables'}
                       </Typography>
                     </Box>
                   </Box>
@@ -680,17 +689,19 @@ const ProjectDetailPage: React.FC = () => {
 
             <TabPanel value={activeTab} index={1}>
               <Box sx={{ 
-                height: '100%', 
+                flex: 1,
                 display: 'flex', 
                 flexDirection: 'column',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                minHeight: 0
               }}>
                 {userQueryData ? (
                   <Box sx={{ 
-                    height: '100%', 
+                    flex: 1,
                     overflow: 'auto',
                     border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: 2
+                    borderRadius: 2,
+                    minHeight: 0
                   }}>
                     <QueryResultsComponent 
                       data={userQueryData} 
@@ -703,7 +714,7 @@ const ProjectDetailPage: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      height: '100%',
+                      flex: 1,
                       border: `2px dashed ${theme.palette.divider}`,
                       borderRadius: 2,
                       backgroundColor: theme.palette.background.default,
@@ -775,17 +786,14 @@ const ProjectDetailPage: React.FC = () => {
           </Collapse>
         </Box>
 
-        {/* Query Component and File Upload Section */}
+        {/* Query Component and File Upload Section - Flexible height */}
         <Box sx={{ 
-          mt: 2,
-          display: 'flex',
-          flexDirection: 'column'
+          mt: 1.5,
+          flexShrink: 0
         }}>
           <Box sx={{ 
             display: 'flex',
-            gap: 2,
-            height: 300,
-            overflow: 'hidden'
+            gap: 2
           }}>
             {/* Query Component */}
             <Box sx={{ flex: 1 }}>
@@ -803,8 +811,8 @@ const ProjectDetailPage: React.FC = () => {
 
             {/* File Upload Section */}
             <Box sx={{ 
-              width: 300,
-              p: 2,
+              width: 260,
+              p: 1.5,
               border: `1px solid ${theme.palette.divider}`,
               borderRadius: 2,
               backgroundColor: theme.palette.background.paper,
@@ -812,11 +820,72 @@ const ProjectDetailPage: React.FC = () => {
               flexDirection: 'column',
               justifyContent: 'space-between'
             }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Upload Excel File
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                <Typography variant="h6" sx={{ fontSize: '1rem' }}>
+                  Upload Excel File
+                </Typography>
+                <Tooltip 
+                  title={
+                    <Box>
+                      <Box sx={{ 
+                        p: 1.5,
+                        borderBottom: `2px solid ${theme.palette.primary.main}`,
+                        backgroundColor: theme.palette.primary.main,
+                      }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'white', whiteSpace: 'nowrap' }}>
+                          Excel File Requirements
+                        </Typography>
+                      </Box>
+                      <Box sx={{ p: 1.5 }}>
+                        <Typography variant="body2" component="div" sx={{ mb: 0.75, color: 'black', whiteSpace: 'nowrap' }}>
+                          • Table headers must be in the first row
+                        </Typography>
+                        <Typography variant="body2" component="div" sx={{ mb: 0.75, color: 'black', whiteSpace: 'nowrap' }}>
+                          • Only one header row per sheet
+                        </Typography>
+                        <Typography variant="body2" component="div" sx={{ color: 'black', whiteSpace: 'nowrap' }}>
+                          • Each column needs at least one populated cell
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                  arrow
+                  placement="left"
+                  componentsProps={{
+                    tooltip: {
+                      sx: {
+                        bgcolor: 'white',
+                        border: `2px solid ${theme.palette.primary.main}`,
+                        boxShadow: '-4px 0 8px rgba(0,0,0,0.1)',
+                        p: 0,
+                        maxWidth: 'none',
+                        '& .MuiTooltip-arrow': {
+                          color: 'white',
+                          '&::before': {
+                            border: `2px solid ${theme.palette.primary.main}`,
+                          }
+                        }
+                      }
+                    }
+                  }}
+                >
+                  <IconButton 
+                    size="small" 
+                    sx={{ 
+                      p: 0.5,
+                      color: theme.palette.success.main,
+                      '&:hover': {
+                        backgroundColor: theme.palette.success.main,
+                        color: 'white',
+                      }
+                    }}
+                  >
+                    <InfoIcon sx={{ fontSize: '1.1rem' }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
               
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
                 <input
                   type="file"
                   accept=".xlsx,.xls"
@@ -825,7 +894,7 @@ const ProjectDetailPage: React.FC = () => {
                   onChange={handleFileChange}
                 />
                 <label htmlFor="excel-upload">
-                  <Button variant="outlined" component="span" startIcon={<UploadIcon />} fullWidth>
+                  <Button variant="outlined" component="span" startIcon={<UploadIcon />} fullWidth size="small">
                     Choose File
                   </Button>
                 </label>
@@ -836,51 +905,54 @@ const ProjectDetailPage: React.FC = () => {
                   onClick={handleUpload}
                   disabled={!selectedFile || loading}
                   fullWidth
+                  size="small"
                 >
                   {loading ? 'Uploading...' : 'Upload'}
                 </Button>
               </Box>
 
               {selectedFile && (
-                <Typography variant="body2" sx={{ mb: 1, wordBreak: 'break-all' }}>
+                <Typography variant="body2" sx={{ mb: 0.5, wordBreak: 'break-all', fontSize: '0.8rem' }}>
                   Selected: {selectedFile.name}
                 </Typography>
               )}
 
               {tier && (
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                   Max size: {parseInt(tier.maxFileSize) === -1 ? '∞' : `${tier.maxFileSize}MB`}
                 </Typography>
               )}
             </Box>
           </Box>
           
-          {/* Messages positioned below the query component without affecting its layout */}
-          <Box sx={{ mt: 1, minHeight: 0 }}>
-            {translationSuccessMessage && (
-              <MessageDisplay 
-                message={translationSuccessMessage} 
-                type="success" 
-                maxWidth="100%"
-              />
-            )}
+          {/* Messages - Dynamic height */}
+          {(translationSuccessMessage || errorMessage || successMessage) && (
+            <Box sx={{ mt: 0.5, py: 1, minHeight: 'auto' }}>
+              {translationSuccessMessage && (
+                <MessageDisplay 
+                  message={translationSuccessMessage} 
+                  type="success" 
+                  maxWidth="100%"
+                />
+              )}
 
-            {errorMessage && (
-              <MessageDisplay 
-                message={errorMessage} 
-                type="error" 
-                maxWidth="600px"
-              />
-            )}
-            
-            {successMessage && (
-              <MessageDisplay 
-                message={successMessage} 
-                type="success" 
-                maxWidth="600px"
-              />
-            )}
-          </Box>
+              {errorMessage && (
+                <MessageDisplay 
+                  message={errorMessage} 
+                  type="error" 
+                  maxWidth="600px"
+                />
+              )}
+              
+              {successMessage && (
+                <MessageDisplay 
+                  message={successMessage} 
+                  type="success" 
+                  maxWidth="600px"
+                />
+              )}
+            </Box>
+          )}
         </Box>
 
         {/* Delete Table Confirmation Dialog */}
