@@ -18,23 +18,23 @@ const EmailVerificationPage: React.FC = () => {
     const navigate = useNavigate();
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [successMessage, setSuccessMessage] = useState<string>('');
-    const [remainingTime, setRemainingTime] = useState<number>(15);
-    const [isResendDisabled, setIsResendDisabled] = useState<boolean>(true);
+    const [remainingTime, setRemainingTime] = useState<number>(0);
+    const [isResendDisabled, setIsResendDisabled] = useState<boolean>(false);
     const [isCheckingVerification, setIsCheckingVerification] = useState<boolean>(false);
 
     const emailVerificationEnabled = process.env.REACT_APP_ENABLE_EMAIL_VERIFICATION === 'true';
 
-    // Timer effect
+    // Timer effect - only runs when there's a cooldown active
     useEffect(() => {
         if (remainingTime > 0) {
             const timer = setTimeout(() => {
                 setRemainingTime(remainingTime - 1);
             }, 1000);
             return () => clearTimeout(timer);
-        } else {
+        } else if (remainingTime === 0 && isResendDisabled) {
             setIsResendDisabled(false);
         }
-    }, [remainingTime]);
+    }, [remainingTime, isResendDisabled]);
 
     // Check verification status periodically
     useEffect(() => {
@@ -81,8 +81,6 @@ const EmailVerificationPage: React.FC = () => {
 
         setErrorMessage('');
         setSuccessMessage('');
-        setIsResendDisabled(true);
-        setRemainingTime(15);
 
         try {
             // Configure action code settings with redirect URL
@@ -93,18 +91,21 @@ const EmailVerificationPage: React.FC = () => {
 
             await sendEmailVerification(user, actionCodeSettings);
             setSuccessMessage('Verification email sent! Please check your inbox.');
+            
+            // Start cooldown based on Firebase's typical rate limit (60 seconds)
+            setIsResendDisabled(true);
+            setRemainingTime(60);
         } catch (error: any) {
             console.error('Error sending verification email:', error);
             
             if (error.code === 'auth/too-many-requests') {
-                setErrorMessage('Too many requests. Please wait a few minutes before trying again.');
+                // Firebase's rate limit is active - set a cooldown timer
+                setErrorMessage('Too many requests. Please wait before trying again.');
+                setIsResendDisabled(true);
+                setRemainingTime(60);
             } else {
                 setErrorMessage('Failed to send verification email. Please try again.');
             }
-            
-            // Reset timer on error
-            setIsResendDisabled(false);
-            setRemainingTime(0);
         }
     };
 
