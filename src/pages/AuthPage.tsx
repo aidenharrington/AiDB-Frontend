@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import {
     createUserWithEmailAndPassword,
+    sendEmailVerification,
     signInWithEmailAndPassword
 } from 'firebase/auth';
 import React, { useEffect, useRef, useState } from 'react';
@@ -22,6 +23,7 @@ import { PasswordValidator } from '../util/PasswordValidator';
 
 const AuthPage: React.FC = () => {
     const ProjectsPage = "/projects";
+    const EmailVerificationPage = "/verify-email";
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -36,6 +38,8 @@ const AuthPage: React.FC = () => {
     const emailRef = useRef<HTMLInputElement>(null);
     const passwordRef = useRef<HTMLInputElement>(null);
     const confirmPasswordRef = useRef<HTMLInputElement>(null);
+
+    const emailVerificationEnabled = process.env.REACT_APP_ENABLE_EMAIL_VERIFICATION === 'true';
 
     // Focus management
     useEffect(() => {
@@ -87,13 +91,35 @@ const AuthPage: React.FC = () => {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
+                // Send email verification if enabled
+                if (emailVerificationEnabled) {
+                    try {
+                        // Configure action code settings with redirect URL
+                        const actionCodeSettings = {
+                            url: `${window.location.origin}/projects`,
+                            handleCodeInApp: false,
+                        };
+                        
+                        await sendEmailVerification(user, actionCodeSettings);
+                    } catch (emailError) {
+                        console.error('Error sending verification email:', emailError);
+                        // Continue even if email fails to send
+                    }
+                }
+                
                 // Get the Firebase ID token
                 const idToken = await user.getIdToken();
                 
                 // Call backend to setup user in database
                 try {
                     const { user: userData, tier } = await setupNewUser(idToken);
-                    navigate(ProjectsPage);
+                    
+                    // Navigate to verification page if enabled and email not verified
+                    if (emailVerificationEnabled && !user.emailVerified) {
+                        navigate(EmailVerificationPage);
+                    } else {
+                        navigate(ProjectsPage);
+                    }
                 } catch (setupError: any) {
                     // Handle user setup errors specifically
                     if (setupError.userFriendlyMessage) {
@@ -111,8 +137,30 @@ const AuthPage: React.FC = () => {
                     }
                 }
             } else {
-                await signInWithEmailAndPassword(auth, email, password);
-                navigate(ProjectsPage);
+                // Sign in
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Check if email verification is required
+                if (emailVerificationEnabled && !user.emailVerified) {
+                    // Send verification email to existing user
+                    try {
+                        const actionCodeSettings = {
+                            url: `${window.location.origin}/projects`,
+                            handleCodeInApp: false,
+                        };
+                        
+                        await sendEmailVerification(user, actionCodeSettings);
+                    } catch (emailError) {
+                        console.error('Error sending verification email:', emailError);
+                        // Continue to verification page even if email fails to send
+                    }
+                    
+                    // User needs to verify email
+                    navigate(EmailVerificationPage);
+                } else {
+                    navigate(ProjectsPage);
+                }
             }
         } catch (err: any) {
             // Use the AuthErrorHandler to get user-friendly error messages

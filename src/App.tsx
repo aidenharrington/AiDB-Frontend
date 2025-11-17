@@ -5,6 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
 import AuthPage from './pages/AuthPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
 import WhyAiDBPage from './pages/WhyAiDBPage';
 import HowToUsePage from './pages/HowToUsePage';
 import RoadmapPage from './pages/RoadmapPage';
@@ -20,6 +21,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  const emailVerificationEnabled = process.env.REACT_APP_ENABLE_EMAIL_VERIFICATION === 'true';
 
   if (loading) {
     return (
@@ -31,6 +33,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  // Check if email verification is required and user hasn't verified
+  if (emailVerificationEnabled && !user.emailVerified) {
+    return <Navigate to="/verify-email" replace />;
   }
 
   return <>{children}</>;
@@ -47,11 +54,17 @@ const AppRoutes: React.FC = () => {
     );
   }
 
+  const emailVerificationEnabled = process.env.REACT_APP_ENABLE_EMAIL_VERIFICATION === 'true';
+  
   return (
     <Routes>
       <Route 
         path="/" 
         element={user ? <Navigate to="/projects" replace /> : <AuthPage />} 
+      />
+      <Route 
+        path="/verify-email" 
+        element={user ? <EmailVerificationPage /> : <Navigate to="/" replace />} 
       />
       <Route 
         path="/projects" 
